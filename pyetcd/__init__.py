@@ -258,5 +258,3 @@ class EtcdClientInternal(EtcdException):
     """
     Error ecodeClientInternal (http code 500)
     """
-
-

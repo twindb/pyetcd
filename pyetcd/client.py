@@ -69,4 +69,3 @@ class Client(object):
         :return: EtcdResult
         :raise: EtcdException
         """
-
