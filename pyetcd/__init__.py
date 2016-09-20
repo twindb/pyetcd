@@ -111,7 +111,6 @@ class EtcdResult(object):
         return self._get_property('state')
 
 
-
 class ResponseNode(object):
     """
     Etcd response includes information about nodes.
