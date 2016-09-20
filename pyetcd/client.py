@@ -87,8 +87,8 @@ class Client(object):
             'value': value
         }
         try:
-            payload = requests.put(self._urls[0] + key, data=data)
-            return EtcdResult(payload.content)
+            response = requests.put(self._urls[0] + key, data=data)
+            return EtcdResult(response)
         except ConnectionError as err:
             raise EtcdException(err)
 
@@ -107,8 +107,7 @@ class Client(object):
             if wait:
                 url += "?wait=true"
 
-            payload = requests.get(url)
-            return EtcdResult(payload.content)
+            return EtcdResult(requests.get(url))
         except ConnectionError as err:
             raise EtcdException(err)
 

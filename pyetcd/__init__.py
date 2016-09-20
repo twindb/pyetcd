@@ -12,26 +12,17 @@ class EtcdResult(object):
     """
     _payload = None
 
-    def __init__(self, payload):
+    def __init__(self, response):
         """
         Initialise EtcdResult instance
 
-        :param payload: JSON string with response from Etcd
-        ::
-            {
-                "action": "set",
-                "node": {
-                    "createdIndex": 2,
-                    "key": "/message",
-                    "modifiedIndex": 2,
-                    "value": "Hello world"
-                }
-            }
+        :param response: Response from server as requests.(get|post|put)
+            returns
         :raise EtcdException: if payload is invalid
         """
         try:
-            self._payload = json.loads(payload)
-        except (ValueError, TypeError) as err:
+            self._payload = json.loads(response.content)
+        except (ValueError, TypeError, AttributeError) as err:
             raise EtcdException(err)
 
     def _get_property(self, key):

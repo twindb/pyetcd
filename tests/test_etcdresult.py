@@ -1,3 +1,4 @@
+import mock
 import pytest
 from pyetcd import EtcdResult, EtcdException
 
@@ -53,7 +54,9 @@ def test_exception_invalid_payload(payload):
      None)
 ])
 def test_action(payload, expected):
-    res = EtcdResult(payload)
+    response = mock.Mock()
+    response.content = payload
+    res = EtcdResult(response)
     assert res.action == expected
 
 
@@ -82,7 +85,9 @@ def test_action(payload, expected):
      None)
 ])
 def test_node(payload, expected):
-    res = EtcdResult(payload)
+    response = mock.Mock()
+    response.content = payload
+    res = EtcdResult(response)
     assert res.node == expected
 
 
@@ -110,13 +115,17 @@ def test_node(payload, expected):
      }),
 ])
 def test_prev_node(payload, expected):
-    res = EtcdResult(payload)
+    response = mock.Mock()
+    response.content = payload
+    res = EtcdResult(response)
     assert res.prevNode == expected
 
 
 def test_version():
     payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
-    res = EtcdResult(payload)
+    response = mock.Mock()
+    response.content = payload
+    res = EtcdResult(response)
     assert res.version_etcdcluster == "2.3.0"
     assert res.version_etcdserver == "2.3.7"
 
@@ -155,7 +164,9 @@ def test_leader():
         "leader": "924e2e83e93f2560"
     }
     """
-    res = EtcdResult(payload)
+    response = mock.Mock()
+    response.content = payload
+    res = EtcdResult(response)
     assert res.leader == "924e2e83e93f2560"
     assert res.followers == {
         "6e3bd23ae5f1eae0": {
@@ -188,7 +199,9 @@ def test_leader():
 
 
 def test_selfstats(payload_self):
-    res = EtcdResult(payload_self)
+    response = mock.Mock()
+    response.content = payload_self
+    res = EtcdResult(response)
     assert res.id == "ce2a822cea30bfca"
     assert res.leaderInfo == {
         "leader": "ce2a822cea30bfca",

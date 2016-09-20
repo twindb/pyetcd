@@ -11,7 +11,7 @@ import mock as mock
 
 import pytest
 from requests import ConnectionError
-from pyetcd import EtcdResult, EtcdException
+from pyetcd import EtcdException
 from pyetcd.client import Client, ClientException
 
 
