@@ -176,3 +176,40 @@ def test_read_exception_unknown_error(mock_requests, default_etcd):
     mock_requests.get.return_value = mock_response
     with pytest.raises(EtcdException):
         default_etcd.read('/foo')
+
+
+@mock.patch('pyetcd.client.requests')
+def test_delete(mock_requests, default_etcd):
+    payload = """
+        {
+            "action": "delete",
+            "node": {
+                "createdIndex": 39,
+                "key": "/foo",
+                "modifiedIndex": 40
+            },
+            "prevNode": {
+                "createdIndex": 39,
+                "key": "/foo",
+                "modifiedIndex": 39,
+                "value": "aaa"
+            }
+        }
+    """
+    mock_response = mock.MagicMock()
+    mock_response.content = payload
+    mock_requests.delete.return_value = mock_response
+    default_etcd.delete('/foo')
+    mock_requests.delete.assert_called_once_with('http://127.0.0.1:2379/v2/keys/foo')
+
+
+@mock.patch('pyetcd.client.requests')
+def test_delete_exception(mock_requests, default_etcd):
+    payload = """
+    {"errorCode":100,"message":"Key not found","cause":"/foo","index":40}
+    """
+    mock_response = mock.MagicMock()
+    mock_response.content = payload
+    mock_requests.delete.return_value = mock_response
+    with pytest.raises(EtcdException):
+        default_etcd.delete('/foo')

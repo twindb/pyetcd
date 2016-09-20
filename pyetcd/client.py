@@ -119,3 +119,8 @@ class Client(object):
         :return: EtcdResult
         :raise: EtcdException
         """
+        try:
+            url = self._urls[0] + key
+            return EtcdResult(requests.delete(url))
+        except ConnectionError as err:
+            raise EtcdException(err)
