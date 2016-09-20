@@ -7,6 +7,15 @@ class profile::etcdnode {
 
     service { 'etcd':
         ensure => running,
-        require => Package['etcd']
+        require => [
+            Package['etcd'],
+            File['/etc/etcd/etcd.conf']
+        ]
+    }
+
+    file { '/etc/etcd':
+        ensure => directory,
+        owner => 'root',
+        mode => '755'
     }
 }

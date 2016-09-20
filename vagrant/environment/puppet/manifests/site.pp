@@ -2,6 +2,14 @@ node /^client$/ {
   include role::client
 }
 
-node /^node.*/ {
-  include role::etcdnode
+node /^infra0$/ {
+  include role::infra0
+}
+
+node /^infra1$/ {
+    include role::infra1
+}
+
+node /^infra2$/ {
+    include role::infra2
 }
