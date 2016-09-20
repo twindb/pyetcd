@@ -1,0 +1,203 @@
+import pytest
+from pyetcd import EtcdResult, EtcdException
+
+__author__ = 'aleks'
+
+@pytest.fixture
+def payload_self():
+    return """
+    {
+    "id": "ce2a822cea30bfca",
+    "leaderInfo": {
+        "leader": "ce2a822cea30bfca",
+        "startTime": "2016-09-19T06:08:51.937661067Z",
+        "uptime": "17h5m58.934381551s"
+    },
+    "name": "default",
+    "recvAppendRequestCnt": 0,
+    "sendAppendRequestCnt": 0,
+    "startTime": "2016-09-19T06:08:51.527241706Z",
+    "state": "StateLeader"
+}"""
+
+
+@pytest.mark.parametrize('payload', [
+    'foo',
+    None,
+    123
+])
+def test_exception_invalid_payload(payload):
+    with pytest.raises(EtcdException):
+        EtcdResult(payload)
+
+
+@pytest.mark.parametrize('payload,expected', [
+    ("""{
+    "action": "get",
+    "node": {
+        "createdIndex": 2,
+        "key": "/message",
+        "modifiedIndex": 2,
+        "value": "Hello world"
+    }
+}""",
+     "get"),
+    ("""{
+    "node": {
+        "createdIndex": 2,
+        "key": "/message",
+        "modifiedIndex": 2,
+        "value": "Hello world"
+    }
+}""",
+     None)
+])
+def test_action(payload, expected):
+    res = EtcdResult(payload)
+    assert res.action == expected
+
+
+@pytest.mark.parametrize('payload,expected', [
+    ("""{
+    "action": "get",
+    "node": {
+        "createdIndex": 2,
+        "key": "/message",
+        "modifiedIndex": 2,
+        "value": "Hello world"
+    }
+}""",
+     {
+         "createdIndex": 2,
+         "key": "/message",
+         "modifiedIndex": 2,
+         "value": "Hello world"
+     }),
+    ("""{
+    "cause": "/foo",
+    "errorCode": 100,
+    "index": 6,
+    "message": "Key not found"
+}""",
+     None)
+])
+def test_node(payload, expected):
+    res = EtcdResult(payload)
+    assert res.node == expected
+
+
+@pytest.mark.parametrize('payload,expected', [
+    ("""{
+    "action": "set",
+    "node": {
+        "createdIndex": 3,
+        "key": "/message",
+        "modifiedIndex": 3,
+        "value": "Hello etcd"
+    },
+    "prevNode": {
+    	"createdIndex": 2,
+    	"key": "/message",
+    	"value": "Hello world",
+    	"modifiedIndex": 2
+    }
+}""",
+     {
+         "createdIndex": 2,
+         "key": "/message",
+         "value": "Hello world",
+         "modifiedIndex": 2
+     }),
+])
+def test_prev_node(payload, expected):
+    res = EtcdResult(payload)
+    assert res.prevNode == expected
+
+
+def test_version():
+    payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
+    res = EtcdResult(payload)
+    assert res.version_etcdcluster == "2.3.0"
+    assert res.version_etcdserver == "2.3.7"
+
+
+def test_leader():
+    payload = """
+    {
+        "followers": {
+            "6e3bd23ae5f1eae0": {
+                "counts": {
+                    "fail": 0,
+                    "success": 745
+                },
+                "latency": {
+                    "average": 0.017039507382550306,
+                    "current": 0.000138,
+                    "maximum": 1.007649,
+                    "minimum": 0,
+                    "standardDeviation": 0.05289178277920594
+                }
+            },
+            "a8266ecf031671f3": {
+                "counts": {
+                    "fail": 0,
+                    "success": 735
+                },
+                "latency": {
+                    "average": 0.012124141496598642,
+                    "current": 0.000559,
+                    "maximum": 0.791547,
+                    "minimum": 0,
+                    "standardDeviation": 0.04187900156583733
+                }
+            }
+        },
+        "leader": "924e2e83e93f2560"
+    }
+    """
+    res = EtcdResult(payload)
+    assert res.leader == "924e2e83e93f2560"
+    assert res.followers == {
+        "6e3bd23ae5f1eae0": {
+            "counts": {
+                "fail": 0,
+                "success": 745
+            },
+            "latency": {
+                "average": 0.017039507382550306,
+                "current": 0.000138,
+                "maximum": 1.007649,
+                "minimum": 0,
+                "standardDeviation": 0.05289178277920594
+            }
+        },
+        "a8266ecf031671f3": {
+            "counts": {
+                "fail": 0,
+                "success": 735
+            },
+            "latency": {
+                "average": 0.012124141496598642,
+                "current": 0.000559,
+                "maximum": 0.791547,
+                "minimum": 0,
+                "standardDeviation": 0.04187900156583733
+            }
+        }
+    }
+
+
+def test_selfstats(payload_self):
+    res = EtcdResult(payload_self)
+    assert res.id == "ce2a822cea30bfca"
+    assert res.leaderInfo == {
+        "leader": "ce2a822cea30bfca",
+        "startTime": "2016-09-19T06:08:51.937661067Z",
+        "uptime": "17h5m58.934381551s"
+    }
+    assert res.name == "default"
+    assert res.recvAppendRequestCnt == 0
+    assert res.sendAppendRequestCnt == 0
+    assert res.startTime == "2016-09-19T06:08:51.527241706Z"
+    assert res.state == "StateLeader"
+

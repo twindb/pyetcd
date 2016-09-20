@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+import json
+import requests
+from requests import ConnectionError
+
+from pyetcd import EtcdResult, EtcdException
 
 SUPPORTED_PROTOCOLS = ['http']
 
@@ -31,13 +36,42 @@ class Client(object):
         :raise ClientException: if any errors
         """
         if protocol in SUPPORTED_PROTOCOLS:
-            self.protocol = protocol
+            self._protocol = protocol
         else:
             raise ClientException('Protocol %s is unsupported' % protocol)
-        self.version_prefix = version_prefix
-        self.srv_domain = srv_domain
-        self.port = port
-        self.host = host
+        self._version_prefix = version_prefix
+        self._srv_domain = srv_domain
+        self._hosts = []
+        self._urls = []
+        if isinstance(host, list):
+            for h in host:
+                if isinstance(h, tuple):
+                    self._hosts.append(h)
+                    url = "{protocol}://{host}:{port}/" \
+                          "{version_prefix}/keys" \
+                        .format(protocol=self._protocol,
+                                host=h[0],
+                                port=h[1],
+                                version_prefix=self._version_prefix)
+                    self._urls.append(url)
+                else:
+                    self._hosts.append((h, port))
+                    url = "{protocol}://{host}:{port}/" \
+                          "{version_prefix}/keys" \
+                        .format(protocol=self._protocol,
+                                host=h,
+                                port=port,
+                                version_prefix=self._version_prefix)
+                    self._urls.append(url)
+
+        else:
+            self._hosts.append((host, port))
+            url = "{protocol}://{host}:{port}/{version_prefix}/keys" \
+                .format(protocol=self._protocol,
+                        host=host,
+                        port=port,
+                        version_prefix=self._version_prefix)
+            self._urls.append(url)
 
     def write(self, key, value, ttl=None):
         """
@@ -50,6 +84,14 @@ class Client(object):
         :return: EtcdResult
         :raise: EtcdException
         """
+        data = {
+            'value': value
+        }
+        try:
+            payload = requests.put(self._urls[0] + key, data=data)
+            return EtcdResult(payload.content)
+        except ConnectionError as err:
+            raise EtcdException(err)
 
     def read(self, key, wait=False):
         """

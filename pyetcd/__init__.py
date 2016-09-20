@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 
 __author__ = 'TwinDB Development Team'
 __email__ = 'dev@twindb.com'
@@ -9,6 +10,8 @@ class EtcdResult(object):
     """
     Response from Etcd API
     """
+    _payload = None
+
     def __init__(self, payload):
         """
         Initialise EtcdResult instance
@@ -24,15 +27,89 @@ class EtcdResult(object):
                     "value": "Hello world"
                 }
             }
+        :raise EtcdException: if payload is invalid
         """
+        try:
+            self._payload = json.loads(payload)
+        except (ValueError, TypeError) as err:
+            raise EtcdException(err)
+
+    def _get_property(self, key):
+        try:
+            return self._payload[key]
+        except KeyError:
+            return None
+
+    @property
+    def action(self):
+        """Action type"""
+        return self._get_property('action')
 
     @property
     def node(self):
-        return self.node
+        """Node"""
+        return self._get_property('node')
 
     @property
-    def prev_node(self):
-        return self.prev_node
+    def prevNode(self):
+        """Node"""
+        return self._get_property('prevNode')
+
+    @property
+    def version_etcdcluster(self):
+        """Version of Etcd cluster"""
+        return self._get_property('etcdcluster')
+
+    @property
+    def version_etcdserver(self):
+        """Version of Etcd server"""
+        return self._get_property('etcdserver')
+
+    @property
+    def leader(self):
+        """Leader of cluster"""
+        return self._get_property('leader')
+
+    @property
+    def followers(self):
+        """Followers of leader"""
+        return self._get_property('followers')
+
+    @property
+    def id(self):
+        """id"""
+        return self._get_property('id')
+
+    @property
+    def leaderInfo(self):
+        """leaderInfo"""
+        return self._get_property('leaderInfo')
+
+    @property
+    def name(self):
+        """name"""
+        return self._get_property('name')
+
+    @property
+    def recvAppendRequestCnt(self):
+        """recvAppendRequestCnt"""
+        return self._get_property('recvAppendRequestCnt')
+
+    @property
+    def sendAppendRequestCnt(self):
+        """sendAppendRequestCnt"""
+        return self._get_property('sendAppendRequestCnt')
+
+    @property
+    def startTime(self):
+        """startTime"""
+        return self._get_property('startTime')
+
+    @property
+    def state(self):
+        """state"""
+        return self._get_property('state')
+
 
 
 class ResponseNode(object):
@@ -40,7 +117,7 @@ class ResponseNode(object):
     Etcd response includes information about nodes.
     """
 
-    def __init__(self, key, value=None,
+    def __init__(self, key=None, value=None,
                  created_index=None,
                  modified_index=None):
         """

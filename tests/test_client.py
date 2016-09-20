@@ -7,21 +7,95 @@ test_pyetcd
 
 Tests for `pyetcd` module.
 """
+import mock as mock
 
 import pytest
+from requests import ConnectionError
+from pyetcd import EtcdResult, EtcdException
 from pyetcd.client import Client, ClientException
 
 
-def test_client_defaults():
-    client = Client()
-    assert client.host == '127.0.0.1'
-    assert client.port == 2379
-    assert client.protocol == 'http'
-    assert client.srv_domain is None
-    assert client.version_prefix == 'v2'
+@pytest.fixture
+def default_etcd():
+    return Client()
+
+
+def test_client_defaults(default_etcd):
+    assert default_etcd._hosts[0][0] == '127.0.0.1'
+    assert default_etcd._hosts[0][1] == 2379
+    assert default_etcd._protocol == 'http'
+    assert default_etcd._srv_domain is None
+    assert default_etcd._version_prefix == 'v2'
+    assert default_etcd._urls[0] == 'http://127.0.0.1:2379/v2/keys'
+
+
+def test_client_hosts_str():
+    client = Client(host='10.10.10.10', port=1111)
+    assert client._hosts[0][0] == '10.10.10.10'
+    assert client._hosts[0][1] == 1111
+    assert client._urls[0] == 'http://10.10.10.10:1111/v2/keys'
+
+
+def test_client_hosts_list():
+    client = Client(host=['10.10.10.10',
+                          '10.10.10.20'])
+    assert client._hosts[0][0] == '10.10.10.10'
+    assert client._hosts[0][1] == 2379
+    assert client._hosts[1][0] == '10.10.10.20'
+    assert client._hosts[1][1] == 2379
+    assert client._urls == [
+        'http://10.10.10.10:2379/v2/keys',
+        'http://10.10.10.20:2379/v2/keys',
+    ]
+
+
+def test_client_hosts_tuples():
+    client = Client(host=[('10.10.10.10', 1111),
+                          ('10.10.10.20', 2222)])
+    assert client._hosts[0][0] == "10.10.10.10"
+    assert client._hosts[0][1] == 1111
+    assert client._hosts[1][0] == "10.10.10.20"
+    assert client._hosts[1][1] == 2222
+    assert client._urls == [
+        'http://10.10.10.10:1111/v2/keys',
+        'http://10.10.10.20:2222/v2/keys',
+    ]
 
 
 def test_client_raises_exception_if_unsupported_protocol():
     Client(protocol='http')
     with pytest.raises(ClientException):
         Client(protocol='foo')
+
+
+@mock.patch('pyetcd.client.requests')
+def test_write(mock_requests, default_etcd):
+    mock_payload = mock.Mock()
+    mock_payload.content = """
+                            {
+                                "action": "set",
+                                "node": {
+                                    "createdIndex": 28,
+                                    "key": "/messsage",
+                                    "modifiedIndex": 28,
+                                    "value": "Hello world"
+                                },
+                                "prevNode": {
+                                    "createdIndex": 27,
+                                    "key": "/messsage",
+                                    "modifiedIndex": 27,
+                                    "value": "Hello world"
+                                }
+                            }
+                            """
+    mock_requests.put.return_value = mock_payload
+    response = default_etcd.write('/messsage', 'Hello world')
+    assert response.action == 'set'
+    assert response.node['value'] == 'Hello world'
+
+
+@mock.patch('pyetcd.client.requests')
+def test_write_raises_exception(mock_requests, default_etcd):
+    mock_requests.put.side_effect = ConnectionError
+    with pytest.raises(EtcdException):
+        default_etcd.write('/messsage', 'Hello world')
