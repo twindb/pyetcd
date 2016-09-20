@@ -154,3 +154,25 @@ def test_read_raises_exception(mock_requests, default_etcd):
     mock_requests.get.side_effect = ConnectionError
     with pytest.raises(EtcdException):
         default_etcd.read('/messsage')
+
+
+@mock.patch('pyetcd.client.requests')
+def test_read_exception_no_key(mock_requests, default_etcd):
+    payload = '{"errorCode":100,"message":"Key not found",' \
+              '"cause":"/foo","index":38}'
+    mock_response = mock.MagicMock()
+    mock_response.content = payload
+    mock_requests.get.return_value = mock_response
+    with pytest.raises(EtcdException):
+        default_etcd.read('/foo')
+
+
+@mock.patch('pyetcd.client.requests')
+def test_read_exception_unknown_error(mock_requests, default_etcd):
+    payload = '{"errorCode":1000,"message":"Unknown error",' \
+              '"cause":"/foo","index":38}'
+    mock_response = mock.MagicMock()
+    mock_response.content = payload
+    mock_requests.get.return_value = mock_response
+    with pytest.raises(EtcdException):
+        default_etcd.read('/foo')

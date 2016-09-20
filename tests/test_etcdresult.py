@@ -75,7 +75,16 @@ def test_action(payload, expected):
          "key": "/message",
          "modifiedIndex": 2,
          "value": "Hello world"
-     }),
+     })
+])
+def test_node(payload, expected):
+    response = mock.Mock()
+    response.content = payload
+    res = EtcdResult(response)
+    assert res.node == expected
+
+
+@pytest.mark.parametrize('payload', [
     ("""{
     "cause": "/foo",
     "errorCode": 100,
@@ -84,11 +93,11 @@ def test_action(payload, expected):
 }""",
      None)
 ])
-def test_node(payload, expected):
+def test_node_exception(payload):
     response = mock.Mock()
     response.content = payload
-    res = EtcdResult(response)
-    assert res.node == expected
+    with pytest.raises(EtcdException):
+        EtcdResult(response)
 
 
 @pytest.mark.parametrize('payload,expected', [
