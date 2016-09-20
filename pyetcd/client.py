@@ -101,6 +101,16 @@ class Client(object):
         :return: EtcdResult
         :raise: EtcdException
         """
+        try:
+            url = self._urls[0] + key
+
+            if wait:
+                url += "?wait=true"
+
+            payload = requests.get(url)
+            return EtcdResult(payload.content)
+        except ConnectionError as err:
+            raise EtcdException(err)
 
     def delete(self, key):
         """

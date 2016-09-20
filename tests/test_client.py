@@ -99,3 +99,58 @@ def test_write_raises_exception(mock_requests, default_etcd):
     mock_requests.put.side_effect = ConnectionError
     with pytest.raises(EtcdException):
         default_etcd.write('/messsage', 'Hello world')
+
+
+@mock.patch('pyetcd.client.requests')
+def test_read(mock_requests, default_etcd):
+    mock_payload = mock.Mock()
+    mock_payload.content = """
+        {
+            "action": "get",
+            "node": {
+                "createdIndex": 28,
+                "key": "/messsage",
+                "modifiedIndex": 28,
+                "value": "Hello world"
+            }
+        }
+    """
+    mock_requests.get.return_value = mock_payload
+    response = default_etcd.read('/messsage')
+    assert response.action == 'get'
+    assert response.node['value'] == 'Hello world'
+
+
+@mock.patch('pyetcd.client.requests.get')
+def test_read_wait(mock_get, default_etcd):
+    mock_payload = mock.Mock()
+    mock_payload.content = """
+            {
+                "action": "set",
+                "node": {
+                    "createdIndex": 30,
+                    "key": "/messsage",
+                    "modifiedIndex": 30,
+                    "value": "foo"
+                },
+                "prevNode": {
+                    "createdIndex": 29,
+                    "key": "/messsage",
+                    "modifiedIndex": 29,
+                    "value": "bar"
+                }
+            }
+        """
+    mock_get.return_value = mock_payload
+    response = default_etcd.read('/messsage', wait=True)
+    assert response.action == 'set'
+    assert response.node['value'] == 'foo'
+    mock_get.assert_called_once_with(
+        'http://127.0.0.1:2379/v2/keys/messsage?wait=true')
+
+
+@mock.patch('pyetcd.client.requests')
+def test_read_raises_exception(mock_requests, default_etcd):
+    mock_requests.get.side_effect = ConnectionError
+    with pytest.raises(EtcdException):
+        default_etcd.read('/messsage')
