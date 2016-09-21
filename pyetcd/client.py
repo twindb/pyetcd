@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import requests
-from requests import ConnectionError
+from requests import RequestException
 
 from pyetcd import EtcdResult, EtcdException
 
@@ -22,7 +22,8 @@ class Client(object):
                  port=2379,
                  srv_domain=None,
                  version_prefix='v2',
-                 protocol='http'):
+                 protocol='http',
+                 allow_reconnect=True):
         """
         Initialize Client class instance
 
@@ -31,9 +32,12 @@ class Client(object):
         :param port: TCP port to connect to (default=2379)
         :param srv_domain: Domain name if DNS discovery is used
         :param version_prefix: API version prefix (default='v2')
+        :param allow_reconnect: If client fails to connect to a cluster node
+            connect to the next node in the cluster
         :param protocol: Protocol to connect to the cluster (default='http')
         :raise ClientException: if any errors
         """
+        self._allow_reconnect = allow_reconnect
         if protocol in SUPPORTED_PROTOCOLS:
             self._protocol = protocol
         else:
@@ -86,11 +90,7 @@ class Client(object):
         data = {
             'value': value
         }
-        try:
-            response = requests.put(self._urls[0] + key, data=data)
-            return EtcdResult(response)
-        except ConnectionError as err:
-            raise EtcdException(err)
+        return self._request_call(key, method='put', data=data)
 
     def read(self, key, wait=False):
         """
@@ -101,15 +101,7 @@ class Client(object):
         :return: EtcdResult
         :raise: EtcdException
         """
-        try:
-            url = self._urls[0] + key
-
-            if wait:
-                url += "?wait=true"
-
-            return EtcdResult(requests.get(url))
-        except ConnectionError as err:
-            raise EtcdException(err)
+        return self._request_call(key, wait=wait)
 
     def delete(self, key):
         """
@@ -119,8 +111,24 @@ class Client(object):
         :return: EtcdResult
         :raise: EtcdException
         """
+        return self._request_call(key, method='delete')
+
+    def _request_call(self, key, method='get', wait=False, **kwargs):
         try:
-            url = self._urls[0] + key
-            return EtcdResult(requests.delete(url))
-        except ConnectionError as err:
+            if self._allow_reconnect:
+                urls = self._urls
+            else:
+                urls = [self._urls[0]]
+            for u in urls:
+                try:
+                    url = u + key
+
+                    if wait:
+                        url += "?wait=true"
+
+                    return EtcdResult(getattr(requests, method)(url, **kwargs))
+                except RequestException:
+                    pass
+            raise EtcdException('No more hosts to connect')
+        except RequestException as err:
             raise EtcdException(err)
