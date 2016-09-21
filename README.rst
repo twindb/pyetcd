@@ -1,6 +1,6 @@
-===============================
+======
 pyetcd
-===============================
+======
 
 
 .. image:: https://img.shields.io/pypi/v/pyetcd.svg
@@ -18,7 +18,7 @@ pyetcd
      :alt: Updates
 
 
-Python library to work with Etcd
+Python library to work with Etcd.
 
 
 * Free software: Apache Software License 2.0
@@ -28,10 +28,10 @@ Python library to work with Etcd
 Features
 --------
 
-* TODO
+* Basic key operations
 
 Credits
----------
+-------
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 

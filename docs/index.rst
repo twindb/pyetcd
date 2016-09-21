@@ -16,7 +16,8 @@ Contents:
    usage
    pyetcd
    contributing
-   authorshistory
+   authors
+   history
 
 Indices and tables
 ==================
