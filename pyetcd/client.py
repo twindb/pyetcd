@@ -114,21 +114,18 @@ class Client(object):
         return self._request_call(key, method='delete')
 
     def _request_call(self, key, method='get', wait=False, **kwargs):
-        try:
-            if self._allow_reconnect:
-                urls = self._urls
-            else:
-                urls = [self._urls[0]]
-            for u in urls:
-                try:
-                    url = u + key
+        if self._allow_reconnect:
+            urls = self._urls
+        else:
+            urls = [self._urls[0]]
+        for u in urls:
+            try:
+                url = u + key
 
-                    if wait:
-                        url += "?wait=true"
+                if wait:
+                    url += "?wait=true"
 
-                    return EtcdResult(getattr(requests, method)(url, **kwargs))
-                except RequestException:
-                    pass
-            raise EtcdException('No more hosts to connect')
-        except RequestException as err:
-            raise EtcdException(err)
+                return EtcdResult(getattr(requests, method)(url, **kwargs))
+            except RequestException:
+                pass
+        raise EtcdException('No more hosts to connect')

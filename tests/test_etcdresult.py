@@ -1,6 +1,6 @@
 import mock
 import pytest
-from pyetcd import EtcdResult, EtcdException
+from pyetcd import EtcdResult, EtcdException, ResponseNode
 
 __author__ = 'aleks'
 
@@ -21,6 +21,16 @@ def payload_self():
     "state": "StateLeader"
 }"""
 
+
+def test_response_node():
+    rn = ResponseNode(key='foo',
+                      value='bar',
+                      created_index=1,
+                      modified_index=2)
+    assert rn.key == 'foo'
+    assert rn.value == 'bar'
+    assert rn.createdIndex == 1
+    assert rn.modifiedIndex == 2
 
 @pytest.mark.parametrize('payload', [
     'foo',
