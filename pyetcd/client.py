@@ -35,7 +35,7 @@ class Client(object):
                  protocol='http',
                  allow_reconnect=True):
         # TODO: implement DNS discovery
-        if not srv_domain:
+        if srv_domain:
             raise ClientException('Not implemented')
 
         self._allow_reconnect = allow_reconnect
@@ -84,7 +84,8 @@ class Client(object):
         :param key: Key
         :param value: Value
         :param ttl: Keys in etcd can be set to expire after a specified number
-            of seconds. You can do this by setting a TTL (time to live) on the key.
+            of seconds. You can do this by setting a TTL (time to live)
+            on the key.
         :return: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """

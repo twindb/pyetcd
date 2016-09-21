@@ -210,7 +210,8 @@ class EtcdResult(object):
     """
     Response from Etcd API
 
-    :param response: Response from server as ``requests.(get|post|put)`` returns.
+    :param response: Response from server as ``requests.(get|post|put)``
+        returns.
     :raise EtcdException: if payload is invalid or contains errorCode.
     """
     _payload = None

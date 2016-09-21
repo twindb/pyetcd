@@ -76,6 +76,14 @@ def payload_delete_success():
     """
 
 
+def test_srv_not_implemented(default_etcd):
+    with pytest.raises(ClientException):
+        Client(srv_domain='foo.bar')
+
+    with pytest.raises(EtcdException):
+        default_etcd.write('/foo', 'bar', ttl=10)
+
+
 def test_client_defaults(default_etcd):
     assert default_etcd._hosts[0][0] == '127.0.0.1'
     assert default_etcd._hosts[0][1] == 2379
