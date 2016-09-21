@@ -3,7 +3,7 @@ import json
 
 __author__ = 'TwinDB Development Team'
 __email__ = 'dev@twindb.com'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 
 # Exceptions
