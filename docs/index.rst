@@ -14,8 +14,10 @@ Contents:
    readme
    installation
    usage
+   pyetcd
    contributing
-   authorshistory
+   authors
+   history
 
 Indices and tables
 ==================

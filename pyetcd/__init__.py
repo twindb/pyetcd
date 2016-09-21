@@ -3,7 +3,7 @@ import json
 
 __author__ = 'TwinDB Development Team'
 __email__ = 'dev@twindb.com'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 
 # Exceptions
@@ -209,6 +209,10 @@ class EtcdClientInternal(EtcdException):
 class EtcdResult(object):
     """
     Response from Etcd API
+
+    :param response: Response from server as ``requests.(get|post|put)``
+        returns.
+    :raise EtcdException: if payload is invalid or contains errorCode.
     """
     _payload = None
     _exception_codes = {
@@ -249,10 +253,6 @@ class EtcdResult(object):
     def __init__(self, response):
         """
         Initialise EtcdResult instance
-
-        :param response: Response from server as requests.(get|post|put)
-            returns
-        :raise EtcdException: if payload is invalid or contains errorCode
         """
         try:
             self._payload = json.loads(response.content)
@@ -289,12 +289,12 @@ class EtcdResult(object):
 
     @property
     def node(self):
-        """Node"""
+        """Node class instance. It holds the current key value."""
         return self._get_property('node')
 
     @property
     def prevNode(self):
-        """Node"""
+        """Node class instance. It holds the previous key value."""
         return self._get_property('prevNode')
 
     @property
@@ -356,27 +356,26 @@ class EtcdResult(object):
 class ResponseNode(object):
     """
     Etcd response includes information about nodes.
-    """
 
+    :param key: the HTTP path to which the request was made.
+        We set /message to Hello world, so the key field is /message.
+        etcd uses a file-system-like structure to represent
+        the key-value pairs, therefore all keys start with /.
+    :param value: the value of the key after resolving the request.
+    :param created_index: an index is a unique, monotonically-incrementing
+        integer created for each change to etcd. This specific index reflects
+        the point in the etcd state member at which a given key was created
+    :param modified_index: like node.createdIndex, this attribute is also
+        an etcd index. Actions that cause the value to change include set,
+        delete, update, create, compareAndSwap and compareAndDelete.
+        Since the get and watch commands do not change state in the store,
+        they do not change the value of node.modifiedIndex.
+    """
     def __init__(self, key=None, value=None,
                  created_index=None,
                  modified_index=None):
         """
         Initialise ResponseNode instance
-
-        :param key: the HTTP path to which the request was made.
-        We set /message to Hello world, so the key field is /message.
-        etcd uses a file-system-like structure to represent
-        the key-value pairs, therefore all keys start with /.
-        :param value: the value of the key after resolving the request.
-        :param created_index: an index is a unique, monotonically-incrementing
-        integer created for each change to etcd. This specific index reflects
-        the point in the etcd state member at which a given key was created
-        :param modified_index: like node.createdIndex, this attribute is also
-        an etcd index. Actions that cause the value to change include set,
-        delete, update, create, compareAndSwap and compareAndDelete.
-        Since the get and watch commands do not change state in the store,
-        they do not change the value of node.modifiedIndex.
         """
         self.modifiedIndex = modified_index
         self.createdIndex = created_index

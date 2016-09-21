@@ -10,7 +10,7 @@ Tests for `pyetcd` module.
 import mock as mock
 
 import pytest
-from requests import ConnectionError
+from requests import ConnectionError, RequestException
 from pyetcd import EtcdException
 from pyetcd.client import Client, ClientException
 
@@ -18,6 +18,70 @@ from pyetcd.client import Client, ClientException
 @pytest.fixture
 def default_etcd():
     return Client()
+
+
+@pytest.fixture
+def payload_read_success():
+    return """
+        {
+            "action": "get",
+            "node": {
+                "createdIndex": 28,
+                "key": "/foo",
+                "modifiedIndex": 28,
+                "value": "Hello world"
+            }
+        }
+    """
+
+
+@pytest.fixture
+def payload_write_success():
+    return """
+        {
+            "action": "set",
+            "node": {
+                "createdIndex": 28,
+                "key": "/messsage",
+                "modifiedIndex": 28,
+                "value": "Hello world"
+            },
+            "prevNode": {
+                "createdIndex": 27,
+                "key": "/messsage",
+                "modifiedIndex": 27,
+                "value": "Hello world"
+            }
+        }
+    """
+
+
+@pytest.fixture
+def payload_delete_success():
+    return """
+        {
+            "action": "delete",
+            "node": {
+                "createdIndex": 39,
+                "key": "/foo",
+                "modifiedIndex": 40
+            },
+            "prevNode": {
+                "createdIndex": 39,
+                "key": "/foo",
+                "modifiedIndex": 39,
+                "value": "aaa"
+            }
+        }
+    """
+
+
+def test_srv_not_implemented(default_etcd):
+    with pytest.raises(ClientException):
+        Client(srv_domain='foo.bar')
+
+    with pytest.raises(EtcdException):
+        default_etcd.write('/foo', 'bar', ttl=10)
 
 
 def test_client_defaults(default_etcd):
@@ -69,26 +133,8 @@ def test_client_raises_exception_if_unsupported_protocol():
 
 
 @mock.patch('pyetcd.client.requests')
-def test_write(mock_requests, default_etcd):
-    mock_payload = mock.Mock()
-    mock_payload.content = """
-                            {
-                                "action": "set",
-                                "node": {
-                                    "createdIndex": 28,
-                                    "key": "/messsage",
-                                    "modifiedIndex": 28,
-                                    "value": "Hello world"
-                                },
-                                "prevNode": {
-                                    "createdIndex": 27,
-                                    "key": "/messsage",
-                                    "modifiedIndex": 27,
-                                    "value": "Hello world"
-                                }
-                            }
-                            """
-    mock_requests.put.return_value = mock_payload
+def test_write(mock_requests, default_etcd, payload_write_success):
+    mock_requests.put.return_value = mock.Mock(content=payload_write_success)
     response = default_etcd.write('/messsage', 'Hello world')
     assert response.action == 'set'
     assert response.node['value'] == 'Hello world'
@@ -102,20 +148,10 @@ def test_write_raises_exception(mock_requests, default_etcd):
 
 
 @mock.patch('pyetcd.client.requests')
-def test_read(mock_requests, default_etcd):
-    mock_payload = mock.Mock()
-    mock_payload.content = """
-        {
-            "action": "get",
-            "node": {
-                "createdIndex": 28,
-                "key": "/messsage",
-                "modifiedIndex": 28,
-                "value": "Hello world"
-            }
-        }
-    """
-    mock_requests.get.return_value = mock_payload
+def test_read(mock_requests, default_etcd, payload_read_success):
+    mock_response = mock.Mock()
+    mock_response.content = payload_read_success
+    mock_requests.get.return_value = mock_response
     response = default_etcd.read('/messsage')
     assert response.action == 'get'
     assert response.node['value'] == 'Hello world'
@@ -179,26 +215,9 @@ def test_read_exception_unknown_error(mock_requests, default_etcd):
 
 
 @mock.patch('pyetcd.client.requests')
-def test_delete(mock_requests, default_etcd):
-    payload = """
-        {
-            "action": "delete",
-            "node": {
-                "createdIndex": 39,
-                "key": "/foo",
-                "modifiedIndex": 40
-            },
-            "prevNode": {
-                "createdIndex": 39,
-                "key": "/foo",
-                "modifiedIndex": 39,
-                "value": "aaa"
-            }
-        }
-    """
-    mock_response = mock.MagicMock()
-    mock_response.content = payload
-    mock_requests.delete.return_value = mock_response
+def test_delete(mock_requests, default_etcd, payload_delete_success):
+    mock_requests.delete.return_value = mock.MagicMock(
+        content=payload_delete_success)
     default_etcd.delete('/foo')
     mock_requests.delete.assert_called_once_with('http://127.0.0.1:2379/v2/keys/foo')
 
@@ -208,8 +227,91 @@ def test_delete_exception(mock_requests, default_etcd):
     payload = """
     {"errorCode":100,"message":"Key not found","cause":"/foo","index":40}
     """
-    mock_response = mock.MagicMock()
-    mock_response.content = payload
-    mock_requests.delete.return_value = mock_response
+    mock_requests.delete.return_value = mock.MagicMock(content=payload)
     with pytest.raises(EtcdException):
         default_etcd.delete('/foo')
+
+
+@mock.patch('pyetcd.client.requests')
+def test_read_from_second_host(mock_requests, payload_read_success):
+    mock_response = [
+        RequestException,
+        mock.MagicMock(content=payload_read_success),
+        mock.MagicMock(content=payload_read_success)
+    ]
+    mock_requests.get = mock.MagicMock(side_effect=mock_response)
+    client = Client(host=[
+        '10.0.1.1',
+        '10.0.1.2',
+        '10.0.1.3'
+    ])
+    assert client.read('/foo').node['value'] == 'Hello world'
+
+
+@mock.patch('pyetcd.client.requests')
+def test_read_exception_if_all_hosts_dead(mock_requests):
+    mock_response = [
+        RequestException,
+        RequestException,
+        RequestException
+    ]
+    mock_requests.get = mock.MagicMock(side_effect=mock_response)
+    client = Client(host=[
+        '10.0.1.1',
+        '10.0.1.2',
+        '10.0.1.3'
+    ])
+    with pytest.raises(EtcdException):
+        client.read('/foo').node['value']
+
+
+@mock.patch('pyetcd.client.requests')
+def test_write_to_second_host(mock_requests, payload_write_success):
+    mock_response = [
+        RequestException,
+        mock.MagicMock(content=payload_write_success),
+        mock.MagicMock(content=payload_write_success)
+    ]
+    mock_requests.put = mock.MagicMock(side_effect=mock_response)
+    client = Client(host=[
+        '10.0.1.1',
+        '10.0.1.2',
+        '10.0.1.3'
+    ])
+    assert client.write('/message', 'Hello world').node['value'] == 'Hello world'
+
+
+@mock.patch('pyetcd.client.requests')
+def test_delete_from_second_host(mock_requests, payload_delete_success):
+    mock_response = [
+        RequestException,
+        mock.MagicMock(content=payload_delete_success),
+        mock.MagicMock(content=payload_delete_success)
+    ]
+    mock_requests.delete = mock.MagicMock(side_effect=mock_response)
+    client = Client(host=[
+        '10.0.1.1',
+        '10.0.1.2',
+        '10.0.1.3'
+    ])
+    client.delete('/message')
+    mock_requests.delete.assert_called_with('http://10.0.1.2:2379/v2/keys/message')
+    assert mock_requests.delete.call_count == 2
+
+
+@mock.patch('pyetcd.client.requests')
+def test_read_exception_if_host_down(mock_requests, payload_read_success):
+    mock_response = [
+        RequestException,
+        mock.MagicMock(content=payload_read_success),
+        mock.MagicMock(content=payload_read_success)
+    ]
+    mock_requests.get = mock.MagicMock(side_effect=mock_response)
+    client = Client(host=[
+        '10.0.1.1',
+        '10.0.1.2',
+        '10.0.1.3'
+    ], allow_reconnect=False)
+    with pytest.raises(EtcdException):
+        assert client.read('/foo').node['value'] == 'Hello world'
+
