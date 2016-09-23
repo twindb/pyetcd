@@ -19,7 +19,7 @@ test_requirements = [str(ir.req) for ir in parse_requirements('requirements_dev.
 
 setup(
     name='pyetcd',
-    version='1.0.1',
+    version='1.0.2',
     description="Python library to work with Etcd",
     long_description=readme + '\n\n' + history,
     author="TwinDB Development Team",
