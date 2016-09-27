@@ -51,30 +51,25 @@ class Client(object):
             for h in host:
                 if isinstance(h, tuple):
                     self._hosts.append(h)
-                    url = "{protocol}://{host}:{port}/" \
-                          "{version_prefix}/keys" \
+                    url = "{protocol}://{host}:{port}" \
                         .format(protocol=self._protocol,
                                 host=h[0],
-                                port=h[1],
-                                version_prefix=self._version_prefix)
+                                port=h[1])
                     self._urls.append(url)
                 else:
                     self._hosts.append((h, port))
-                    url = "{protocol}://{host}:{port}/" \
-                          "{version_prefix}/keys" \
+                    url = "{protocol}://{host}:{port}" \
                         .format(protocol=self._protocol,
                                 host=h,
-                                port=port,
-                                version_prefix=self._version_prefix)
+                                port=port)
                     self._urls.append(url)
 
         else:
             self._hosts.append((host, port))
-            url = "{protocol}://{host}:{port}/{version_prefix}/keys" \
+            url = "{protocol}://{host}:{port}" \
                 .format(protocol=self._protocol,
                         host=host,
-                        port=port,
-                        version_prefix=self._version_prefix)
+                        port=port)
             self._urls.append(url)
 
     def write(self, key, value, ttl=None):
@@ -96,7 +91,7 @@ class Client(object):
         data = {
             'value': value
         }
-        return self._request_call(key, method='put', data=data)
+        return self._request_key(key, method='put', data=data)
 
     def read(self, key, wait=False):
         """
@@ -107,7 +102,7 @@ class Client(object):
         :return: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
-        return self._request_call(key, wait=wait)
+        return self._request_key(key, wait=wait)
 
     def delete(self, key):
         """
@@ -117,16 +112,49 @@ class Client(object):
         :return: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
-        return self._request_call(key, method='delete')
+        return self._request_key(key, method='delete')
 
-    def _request_call(self, key, method='get', wait=False, **kwargs):
+    def version(self):
+        """
+        Return Etcd server version
+
+        :return: string with Etcd server version. E.g. '2.3.7'
+        """
+        response = self._request_call('/version')
+        return response.version_etcdserver
+
+    def version_server(self):
+        """
+        Same as .version()
+
+        :return: string with Etcd server version. E.g. '2.3.7'
+        """
+        return self.version()
+
+    def version_cluster(self):
+        """
+        Return Etcd cluster version
+
+        :return: string with Etcd cluster version. E.g. '2.3.0'
+        """
+        response = self._request_call('/version')
+        return response.version_etcdcluster
+
+    def _request_key(self, key, **kwargs):
+        uri = "/{version_prefix}/keys{key}".format(
+            version_prefix=self._version_prefix,
+            key=key
+        )
+        return self._request_call(uri, **kwargs)
+
+    def _request_call(self, uri, method='get', wait=False, **kwargs):
         if self._allow_reconnect:
             urls = self._urls
         else:
             urls = [self._urls[0]]
         for u in urls:
             try:
-                url = u + key
+                url = u + uri
 
                 if wait:
                     url += "?wait=true"

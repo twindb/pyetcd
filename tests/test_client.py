@@ -90,14 +90,14 @@ def test_client_defaults(default_etcd):
     assert default_etcd._protocol == 'http'
     assert default_etcd._srv_domain is None
     assert default_etcd._version_prefix == 'v2'
-    assert default_etcd._urls[0] == 'http://127.0.0.1:2379/v2/keys'
+    assert default_etcd._urls[0] == 'http://127.0.0.1:2379'
 
 
 def test_client_hosts_str():
     client = Client(host='10.10.10.10', port=1111)
     assert client._hosts[0][0] == '10.10.10.10'
     assert client._hosts[0][1] == 1111
-    assert client._urls[0] == 'http://10.10.10.10:1111/v2/keys'
+    assert client._urls[0] == 'http://10.10.10.10:1111'
 
 
 def test_client_hosts_list():
@@ -108,8 +108,8 @@ def test_client_hosts_list():
     assert client._hosts[1][0] == '10.10.10.20'
     assert client._hosts[1][1] == 2379
     assert client._urls == [
-        'http://10.10.10.10:2379/v2/keys',
-        'http://10.10.10.20:2379/v2/keys',
+        'http://10.10.10.10:2379',
+        'http://10.10.10.20:2379',
     ]
 
 
@@ -121,8 +121,8 @@ def test_client_hosts_tuples():
     assert client._hosts[1][0] == "10.10.10.20"
     assert client._hosts[1][1] == 2222
     assert client._urls == [
-        'http://10.10.10.10:1111/v2/keys',
-        'http://10.10.10.20:2222/v2/keys',
+        'http://10.10.10.10:1111',
+        'http://10.10.10.20:2222',
     ]
 
 
@@ -315,3 +315,35 @@ def test_read_exception_if_host_down(mock_requests, payload_read_success):
     with pytest.raises(EtcdException):
         assert client.read('/foo').node['value'] == 'Hello world'
 
+
+@mock.patch('pyetcd.client.requests')
+def test_client_version(mock_requests):
+    payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
+    mock_response = [
+        mock.MagicMock(content=payload)
+    ]
+    mock_requests.get = mock.MagicMock(side_effect=mock_response)
+    client = Client()
+    assert client.version() == "2.3.7"
+
+
+@mock.patch('pyetcd.client.requests')
+def test_client_version_server(mock_requests):
+    payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
+    mock_response = [
+        mock.MagicMock(content=payload)
+    ]
+    mock_requests.get = mock.MagicMock(side_effect=mock_response)
+    client = Client()
+    assert client.version_server() == "2.3.7"
+
+
+@mock.patch('pyetcd.client.requests')
+def test_client_version_cluster(mock_requests):
+    payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
+    mock_response = [
+        mock.MagicMock(content=payload)
+    ]
+    mock_requests.get = mock.MagicMock(side_effect=mock_response)
+    client = Client()
+    assert client.version_cluster() == "2.3.0"
