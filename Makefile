@@ -51,15 +51,19 @@ lint: ## check style with flake8
 	flake8 pyetcd tests
 
 test: ## run tests quickly with the default Python
-	py.test
-	
+	py.test tests/unit
+
 
 test-all: ## run tests on every Python version with tox
 	tox
 
+test-func: ## run functional tests. requires py.test installed
+	@pip show pyetcd > /dev/null 2>&1 && pip install -e .
+	py.test tests/functional
+
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source pyetcd py.test
-	
+
 		coverage report -m
 		coverage html
 		$(BROWSER) htmlcov/index.html
