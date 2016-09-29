@@ -140,6 +140,19 @@ class Client(object):
         response = self._request_call('/version')
         return response.version_etcdcluster
 
+    def mkdir(self, directory):
+        """
+        Create directory
+
+        :param directory: string with directory name
+        :return: EtcdResult
+        :raise EtcdException: if etcd responds with error or HTTP error
+        """
+        data = {
+            'dir': True
+        }
+        return self._request_key(directory, method='put', data=data)
+
     def _request_key(self, key, **kwargs):
         uri = "/{version_prefix}/keys{key}".format(
             version_prefix=self._version_prefix,
@@ -148,6 +161,7 @@ class Client(object):
         return self._request_call(uri, **kwargs)
 
     def _request_call(self, uri, method='get', wait=False, **kwargs):
+        print(uri)
         if self._allow_reconnect:
             urls = self._urls
         else:
