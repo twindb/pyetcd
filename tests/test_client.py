@@ -317,33 +317,52 @@ def test_read_exception_if_host_down(mock_requests, payload_read_success):
 
 
 @mock.patch('pyetcd.client.requests')
-def test_client_version(mock_requests):
+def test_client_version(mock_requests, default_etcd):
     payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
     mock_response = [
         mock.MagicMock(content=payload)
     ]
     mock_requests.get = mock.MagicMock(side_effect=mock_response)
-    client = Client()
-    assert client.version() == "2.3.7"
+    assert default_etcd.version() == "2.3.7"
 
 
 @mock.patch('pyetcd.client.requests')
-def test_client_version_server(mock_requests):
+def test_client_version_server(mock_requests, default_etcd):
     payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
     mock_response = [
         mock.MagicMock(content=payload)
     ]
     mock_requests.get = mock.MagicMock(side_effect=mock_response)
-    client = Client()
-    assert client.version_server() == "2.3.7"
+    assert default_etcd.version_server() == "2.3.7"
 
 
 @mock.patch('pyetcd.client.requests')
-def test_client_version_cluster(mock_requests):
+def test_client_version_cluster(mock_requests, default_etcd):
     payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
     mock_response = [
         mock.MagicMock(content=payload)
     ]
     mock_requests.get = mock.MagicMock(side_effect=mock_response)
-    client = Client()
-    assert client.version_cluster() == "2.3.0"
+    assert default_etcd.version_cluster() == "2.3.0"
+
+
+@mock.patch.object(Client, '_request_key')
+@mock.patch('pyetcd.client.requests.put')
+def test_client_mkdir(mock_put, mock_client, default_etcd):
+    mock_payload = mock.Mock()
+    mock_payload.content = """
+    {
+        "action": "set",
+        "node": {
+            "createdIndex": 12,
+            "dir": true,
+            "key": "/bar",
+            "modifiedIndex": 12
+        }
+    }
+    """
+    mock_put.return_value = mock_payload
+    default_etcd.mkdir('/foo')
+    mock_client.assert_called_once_with('/foo', method='put', data={
+        'dir': True
+    })
