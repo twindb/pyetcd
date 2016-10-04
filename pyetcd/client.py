@@ -149,7 +149,8 @@ class Client(object):
         :raise EtcdException: if etcd responds with error or HTTP error
         """
         data = {
-            'dir': True
+            'dir': True,
+            'prevExist': False
         }
         return self._request_key(directory, method='put', data=data)
 
@@ -158,6 +159,7 @@ class Client(object):
         Delete directory
 
         :param directory: string with directory name
+        :param recursive: delete the directory even if it's not empty
         :return: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
@@ -176,7 +178,6 @@ class Client(object):
         return self._request_call(uri, **kwargs)
 
     def _request_call(self, uri, method='get', wait=False, **kwargs):
-        print(uri)
         if self._allow_reconnect:
             urls = self._urls
         else:
