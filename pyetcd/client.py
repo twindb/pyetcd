@@ -153,6 +153,21 @@ class Client(object):
         }
         return self._request_key(directory, method='put', data=data)
 
+    def rmdir(self, directory, recursive=False):
+        """
+        Delete directory
+
+        :param directory: string with directory name
+        :return: EtcdResult
+        :raise EtcdException: if etcd responds with error or HTTP error
+        """
+        data = {
+            'dir': True
+        }
+        if recursive:
+            data['recursive'] = True
+        return self._request_key(directory, method='delete', data=data)
+
     def _request_key(self, key, **kwargs):
         uri = "/{version_prefix}/keys{key}".format(
             version_prefix=self._version_prefix,

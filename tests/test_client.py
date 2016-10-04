@@ -366,3 +366,20 @@ def test_client_mkdir(mock_put, mock_client, default_etcd):
     mock_client.assert_called_once_with('/foo', method='put', data={
         'dir': True
     })
+
+
+@mock.patch.object(Client, '_request_key')
+def test_client_rmdir(mock_client, default_etcd):
+    default_etcd.rmdir('/foo')
+    mock_client.assert_called_once_with('/foo', method='delete', data={
+        'dir': True
+    })
+
+
+@mock.patch.object(Client, '_request_key')
+def test_client_rmdir_recursive(mock_client, default_etcd):
+    default_etcd.rmdir('/foo', recursive=True)
+    mock_client.assert_called_once_with('/foo', method='delete', data={
+        'dir': True,
+        'recursive': True
+    })
