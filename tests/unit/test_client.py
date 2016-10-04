@@ -364,7 +364,8 @@ def test_client_mkdir(mock_put, mock_client, default_etcd):
     mock_put.return_value = mock_payload
     default_etcd.mkdir('/foo')
     mock_client.assert_called_once_with('/foo', method='put', data={
-        'dir': True
+        'dir': True,
+        'prevExist': False
     })
 
 
