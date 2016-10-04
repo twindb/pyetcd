@@ -159,15 +159,20 @@ class Client(object):
         Delete directory
 
         :param directory: string with directory name
+        :param recursive: recursively delete directory if not empty
         :return: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
-        data = {
-            'dir': True
-        }
+
+        uri = "/{version_prefix}/keys{key}?dir=true".format(
+            version_prefix=self._version_prefix,
+            key=directory
+        )
+
         if recursive:
-            data['recursive'] = True
-        return self._request_key(directory, method='delete', data=data)
+            uri += "&recursive=true"
+
+        return self._request_call(uri, method='delete')
 
     def _request_key(self, key, **kwargs):
         uri = "/{version_prefix}/keys{key}".format(

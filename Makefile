@@ -58,7 +58,7 @@ test-all: ## run tests on every Python version with tox
 	tox
 
 test-func: ## run functional tests. requires py.test installed
-	@pip show pyetcd > /dev/null 2>&1 && pip install -e .
+	pip show pyetcd > /dev/null 2>&1 && pip install -e .
 	py.test tests/functional
 
 coverage: ## check code coverage quickly with the default Python
