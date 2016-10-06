@@ -1,10 +1,12 @@
 import json
+from pprint import pprint
 import pytest
 
 import requests
 import time
 
-from pyetcd import EtcdNodeExist, EtcdDirNotEmpty, EtcdKeyNotFound
+from pyetcd import EtcdNodeExist, EtcdDirNotEmpty, EtcdKeyNotFound, \
+    EtcdTestFailed
 from pyetcd.client import Client
 
 
@@ -60,3 +62,43 @@ def test_write_ttl(ttl, client):
     time.sleep(ttl + 1)
     with pytest.raises(EtcdKeyNotFound):
         client.read('/foo')
+
+
+def test_client_cas_prev_exist(client):
+    client.compare_and_swap('/foo', 'bar1')
+    with pytest.raises(EtcdNodeExist):
+        client.compare_and_swap('/foo', 'bar2', prev_exist=False)
+
+
+def test_client_cas_prev_value(client):
+    client.compare_and_swap('/foo', 'bar')
+    with pytest.raises(EtcdTestFailed):
+        client.compare_and_swap('/foo', 'bar2', prev_value='bar1')
+
+
+def test_client_cas_prev_index(client):
+    response = client.compare_and_swap('/foo', 'bar')
+    modifiedIndex = response.node['modifiedIndex']
+    client.compare_and_swap('/foo', 'bar2', prev_index=modifiedIndex)
+    with pytest.raises(EtcdTestFailed):
+        client.compare_and_swap('/foo', 'bar2', prev_index=modifiedIndex)
+
+
+def test_client_cad_prev_value(client):
+    client.write('/foo', 'bar')
+    client.compare_and_delete('/foo', prev_value='bar')
+
+    client.write('/foo', 'bar')
+    with pytest.raises(EtcdTestFailed):
+        client.compare_and_delete('/foo', prev_value='bar1')
+
+
+def test_client_cad_prev_index(client):
+    response = client.write('/foo', 'bar')
+    modifiedIndex = response.node['modifiedIndex']
+    client.compare_and_delete('/foo', prev_index=modifiedIndex)
+
+    client.write('/foo', 'bar')
+    with pytest.raises(EtcdTestFailed):
+        client.compare_and_delete('/foo', prev_index=modifiedIndex)
+
