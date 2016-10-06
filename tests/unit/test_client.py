@@ -57,6 +57,23 @@ def payload_write_success():
 
 
 @pytest.fixture
+def payload_write_ttl_success():
+    return """
+        {
+            "action": "set",
+            "node": {
+                "createdIndex": 5,
+                "expiration": "2013-12-04T12:01:21.874888581-08:00",
+                "key": "/foo",
+                "modifiedIndex": 5,
+                "ttl": 5,
+                "value": "bar"
+            }
+        }
+    """
+
+
+@pytest.fixture
 def payload_delete_success():
     return """
         {
@@ -138,6 +155,15 @@ def test_write(mock_requests, default_etcd, payload_write_success):
     response = default_etcd.write('/messsage', 'Hello world')
     assert response.action == 'set'
     assert response.node['value'] == 'Hello world'
+
+
+@mock.patch('pyetcd.client.requests')
+def test_write_ttl(mock_requests, default_etcd, payload_write_ttl_success):
+    mock_requests.put.return_value = mock.Mock(content=payload_write_ttl_success)
+    response = default_etcd.write('/messsage', 'bar', ttl=5)
+    assert response.action == 'set'
+    assert response.node['value'] == 'bar'
+    assert response.node['ttl'] == 5
 
 
 @mock.patch('pyetcd.client.requests')

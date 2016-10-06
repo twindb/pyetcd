@@ -1,12 +1,10 @@
-import shlex
-
 import json
 import pytest
-from subprocess import call
 
 import requests
+import time
 
-from pyetcd import EtcdNodeExist, EtcdDirNotEmpty
+from pyetcd import EtcdNodeExist, EtcdDirNotEmpty, EtcdKeyNotFound
 from pyetcd.client import Client
 
 
@@ -51,3 +49,14 @@ def test_rmdir_recursive(client):
         client.rmdir('/aaa')
     client.rmdir('/aaa', recursive=True)
     assert response.node['key'] == '/aaa/bbb'
+
+
+@pytest.mark.parametrize('ttl', [
+    1, 2
+])
+def test_write_ttl(ttl, client):
+    response = client.write('/foo', 'bar', ttl=ttl)
+    assert response.node['ttl'] == ttl
+    time.sleep(ttl + 1)
+    with pytest.raises(EtcdKeyNotFound):
+        client.read('/foo')
