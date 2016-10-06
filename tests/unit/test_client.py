@@ -449,6 +449,10 @@ def test_request_key_takes_params(mock_request_call, default_etcd):
         {
             'prevIndex': 10
         }
+    ),
+    (
+        {},
+        None
     )
 ])
 @mock.patch.object(Client, '_request_key')
