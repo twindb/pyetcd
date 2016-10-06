@@ -171,7 +171,8 @@ class Client(object):
         return self._request_key(directory, params=params, method='delete')
 
     def compare_and_swap(self, key, value, prev_value=None, prev_index=None,
-                         prev_exist=None):
+                         prev_exist=None,
+                         ttl=None):
         """
         This command will set the value of a key only if the client-provided
         conditions are equal to the current conditions.
@@ -181,7 +182,8 @@ class Client(object):
         :param prev_value: checks the previous value of the key.
         :param prev_index: checks the previous modifiedIndex of the key.
         :param prev_exist: checks existence of the key: if prevExist is True,
-        it is an update request; if prevExist is False, it is a create request.
+            it is an update request; if prevExist is False, it is a create request.
+        :param ttl: set ttl on the key in seconds
         :return: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error.
 
@@ -192,6 +194,9 @@ class Client(object):
         data = {
             'value': value
         }
+        if ttl:
+            data['ttl'] = ttl
+
         params = None
 
         if prev_exist is not None:

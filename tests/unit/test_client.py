@@ -462,6 +462,20 @@ def test_client_cas(mock_client, kwargs, params, default_etcd):
                                         params=params)
 
 
+@mock.patch.object(Client, '_request_key')
+def test_client_cas(mock_client, default_etcd):
+    default_etcd.compare_and_swap('/foo', 'bar', ttl=10, prev_exist=False)
+    mock_client.assert_called_once_with('/foo',
+                                        data={
+                                            'value': 'bar',
+                                            'ttl': 10
+                                        },
+                                        method='put',
+                                        params={
+                                            'prevExist': False
+                                        })
+
+
 @pytest.mark.parametrize('kwargs,params', [
     (
         {
