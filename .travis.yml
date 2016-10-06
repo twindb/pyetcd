@@ -12,12 +12,10 @@ deploy:
 env:
 - TOXENV=flake8
 - TOXENV=cov
-- TOXENV=py35
-- TOXENV=py34
 - TOXENV=py27
 - TOXENV=py26
 - TOXENV=pypy
 install: pip install -U tox
 language: python
-python: 3.5
+python: 2.7
 script: tox -e ${TOXENV}
