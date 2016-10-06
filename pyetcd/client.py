@@ -188,9 +188,6 @@ class Client(object):
             EtcdNodeExist if condition prev_exist=False fails.
 
             EtcdTestFailed if condition prev_value='bar' fails.
-
-
-
         """
         data = {
             'value': value
@@ -214,6 +211,33 @@ class Client(object):
 
         return self._request_key(key, method='put',
                                  params=params, data=data)
+
+    def compare_and_delete(self, key, prev_value=None, prev_index=None):
+        """
+        This command will delete a key only if the client-provided
+        conditions are equal to the current conditions.
+
+        :param key: the key
+        :param prev_value: checks the previous value of the key.
+        :param prev_index: checks the previous modifiedIndex of the key.
+        :return: EtcdResult
+        :raise EtcdException: if etcd responds with error or HTTP error.
+
+            EtcdNodeExist if any condition fails.
+        """
+        params = None
+
+        if prev_value is not None:
+            params = {
+                'prevValue': prev_value
+            }
+
+        if prev_index is not None:
+            params = {
+                'prevIndex': prev_index
+            }
+
+        return self._request_key(key, method='delete', params=params)
 
     def _request_key(self, key, method='get', params=None, **kwargs):
         """

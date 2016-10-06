@@ -461,3 +461,29 @@ def test_client_cas(mock_client, kwargs, params, default_etcd):
                                         method='put',
                                         params=params)
 
+
+@pytest.mark.parametrize('kwargs,params', [
+    (
+        {
+            'prev_value': 'bar'
+        },
+        {
+            'prevValue': 'bar'
+        }
+    ),
+    (
+        {
+            'prev_index': 10
+        },
+        {
+            'prevIndex': 10
+        }
+    )
+])
+@mock.patch.object(Client, '_request_key')
+def test_client_cad(mock_client, kwargs, params, default_etcd):
+    default_etcd.compare_and_delete('/foo', **kwargs)
+    mock_client.assert_called_once_with('/foo',
+                                        method='delete',
+                                        params=params)
+
