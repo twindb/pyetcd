@@ -467,7 +467,7 @@ def test_client_cas(mock_client, kwargs, params, default_etcd):
 
 
 @mock.patch.object(Client, '_request_key')
-def test_client_cas(mock_client, default_etcd):
+def test_client_cas_ttl(mock_client, default_etcd):
     default_etcd.compare_and_swap('/foo', 'bar', ttl=10, prev_exist=False)
     mock_client.assert_called_once_with('/foo',
                                         data={
