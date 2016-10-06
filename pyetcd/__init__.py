@@ -255,10 +255,14 @@ class EtcdResult(object):
         Initialise EtcdResult instance
         """
         try:
+            self._response_content = response.content
             self._payload = json.loads(response.content)
             self._raise_for_status(self._payload)
         except (ValueError, TypeError, AttributeError) as err:
             raise EtcdException(err)
+
+    def __repr__(self):
+        return self._response_content
 
     def _get_property(self, key):
         try:

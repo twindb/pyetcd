@@ -398,10 +398,66 @@ def test_client_mkdir(mock_put, mock_client, default_etcd):
 @mock.patch.object(Client, '_request_call')
 def test_client_rmdir(mock_client, default_etcd):
     default_etcd.rmdir('/foo')
-    mock_client.assert_called_once_with('/v2/keys/foo?dir=true', method='delete')
+    mock_client.assert_called_once_with('/v2/keys/foo?dir=true',
+                                        method='delete')
+
+
+@mock.patch.object(Client, '_request_key')
+def test_client_rmdir_recursive(mock_client, default_etcd):
+    default_etcd.rmdir('/foo', recursive=True)
+    params = {
+        'dir': 'true',
+        'recursive': 'true'
+    }
+    mock_client.assert_called_once_with('/foo',
+                                        params=params,
+                                        method='delete')
 
 
 @mock.patch.object(Client, '_request_call')
-def test_client_rmdir_recursive(mock_client, default_etcd):
-    default_etcd.rmdir('/foo', recursive=True)
-    mock_client.assert_called_once_with('/v2/keys/foo?dir=true&recursive=true', method='delete')
+def test_request_key_takes_params(mock_request_call, default_etcd):
+    params = {
+        'p1': 'v1',
+        'p2': 'v2'
+    }
+    default_etcd._request_key('/foo', params=params)
+    mock_request_call.assert_called_once_with('/v2/keys/foo?p1=v1&p2=v2',
+                                              method='get')
+
+
+@pytest.mark.parametrize('kwargs,params', [
+    (
+        {
+            'prev_exist': False
+        },
+        {
+            'prevExist': False
+        }
+    ),
+    (
+        {
+            'prev_value': 'bar'
+        },
+        {
+            'prevValue': 'bar'
+        }
+    ),
+    (
+        {
+            'prev_index': 10
+        },
+        {
+            'prevIndex': 10
+        }
+    )
+])
+@mock.patch.object(Client, '_request_key')
+def test_client_cas(mock_client, kwargs, params, default_etcd):
+    default_etcd.compare_and_swap('/foo', 'bar', **kwargs)
+    mock_client.assert_called_once_with('/foo',
+                                        data={
+                                            'value': 'bar'
+                                        },
+                                        method='put',
+                                        params=params)
+

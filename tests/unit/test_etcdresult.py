@@ -4,10 +4,11 @@ from pyetcd import EtcdResult, EtcdException, ResponseNode
 
 __author__ = 'aleks'
 
+
 @pytest.fixture
 def payload_self():
     return """
-    {
+{
     "id": "ce2a822cea30bfca",
     "leaderInfo": {
         "leader": "ce2a822cea30bfca",
@@ -22,6 +23,13 @@ def payload_self():
 }"""
 
 
+def test_etcd_result_response(payload_self):
+    response = mock.Mock()
+    response.content = payload_self
+    r = EtcdResult(response)
+    assert r.__repr__() == payload_self
+
+
 def test_response_node():
     rn = ResponseNode(key='foo',
                       value='bar',
@@ -31,6 +39,7 @@ def test_response_node():
     assert rn.value == 'bar'
     assert rn.createdIndex == 1
     assert rn.modifiedIndex == 2
+
 
 @pytest.mark.parametrize('payload', [
     'foo',
