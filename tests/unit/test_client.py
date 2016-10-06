@@ -449,6 +449,10 @@ def test_request_key_takes_params(mock_request_call, default_etcd):
         {
             'prevIndex': 10
         }
+    ),
+    (
+        {},
+        None
     )
 ])
 @mock.patch.object(Client, '_request_key')
@@ -460,6 +464,20 @@ def test_client_cas(mock_client, kwargs, params, default_etcd):
                                         },
                                         method='put',
                                         params=params)
+
+
+@mock.patch.object(Client, '_request_key')
+def test_client_cas_ttl(mock_client, default_etcd):
+    default_etcd.compare_and_swap('/foo', 'bar', ttl=10, prev_exist=False)
+    mock_client.assert_called_once_with('/foo',
+                                        data={
+                                            'value': 'bar',
+                                            'ttl': 10
+                                        },
+                                        method='put',
+                                        params={
+                                            'prevExist': False
+                                        })
 
 
 @pytest.mark.parametrize('kwargs,params', [
