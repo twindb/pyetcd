@@ -84,13 +84,11 @@ class Client(object):
         :return: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
-        # TODO implement ttl
-        if ttl:
-            raise EtcdException('Not implemented')
-
         data = {
             'value': value
         }
+        if ttl and ttl > 0:
+            data['ttl'] = int(ttl)
         return self._request_key(key, method='put', data=data)
 
     def read(self, key, wait=False):
