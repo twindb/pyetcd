@@ -505,3 +505,14 @@ def test_client_cad(mock_client, kwargs, params, default_etcd):
                                         method='delete',
                                         params=params)
 
+
+@mock.patch.object(Client, '_request_key')
+def test_client_update_ttl(mock_update_ttl, default_etcd):
+    default_etcd.update_ttl('/foo', 10)
+    mock_update_ttl.assert_called_once_with('/foo',
+                                            method='put',
+                                            data={
+                                                'ttl': 10,
+                                                'refresh': 'true',
+                                                'prevExist': 'true'
+                                            })

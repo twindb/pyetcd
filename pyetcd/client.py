@@ -247,6 +247,25 @@ class Client(object):
 
         return self._request_key(key, method='delete', params=params)
 
+    def update_ttl(self, key, ttl):
+        """
+        Update key's ttl
+
+        :param key: the key
+        :param ttl: new ttl
+        :return: EtcdResult
+        :raise EtcdException: if etcd responds with error or HTTP error.
+
+            EtcdKeyNotFound if the key doesn't exist
+        """
+        data = {
+            'ttl': ttl,
+            'refresh': 'true',
+            'prevExist': 'true'
+        }
+
+        return self._request_key(key, method='put', data=data)
+
     def _request_key(self, key, method='get', params=None, **kwargs):
         """
         Make an API call on a key
