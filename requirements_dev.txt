@@ -9,3 +9,4 @@ PyYAML
 pytest
 mock
 coverage
+codecov
