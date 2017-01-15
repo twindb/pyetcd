@@ -17,7 +17,7 @@ pyetcd
      :target: https://pyup.io/repos/github/twindb/pyetcd/
      :alt: Updates
 
-.. image:: https://img.shields.io/codecov/c/github/codecov/example-python.svg
+.. image:: https://img.shields.io/codecov/c/github/twindb/pyetcd.svg
     :target: https://codecov.io/gh/twindb/pyetcd
 
 Python library to work with Etcd.
