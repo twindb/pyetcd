@@ -65,7 +65,7 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 
 lint: ## check style with flake8
-	flake8 pyetcd tests
+	flake8 pyetcd
 
 test: ## run tests quickly with the default Python
 	pytest -xv --cov-report term-missing --cov=./pyetcd tests/unit
@@ -78,12 +78,7 @@ test-func: ## run functional tests. requires py.test installed
 	pip show pyetcd > /dev/null 2>&1 && pip install -e .
 	py.test tests/functional
 
-coverage: ## check code coverage quickly with the default Python
-	coverage run --source pyetcd py.test
-
-		coverage report -m
-		coverage html
-		$(BROWSER) htmlcov/index.html
+coverage: test ## check code coverage quickly with the default Python
 
 docs: ## generate Sphinx HTML documentation, including API docs
 	rm -f docs/pyetcd.rst
