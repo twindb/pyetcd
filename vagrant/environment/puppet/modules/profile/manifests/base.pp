@@ -38,11 +38,10 @@ class profile::base {
   }
 
     package { 'epel-release':
-        provider => rpm,
-        source => 'http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-8.noarch.rpm'
+        ensure   => installed,
     }
 
-    $packages = [ 'vim-enhanced', 'python-pip']
+    $packages = [ 'vim-enhanced', 'python2-pip', 'jq']
 
     package { $packages:
         ensure => installed,
@@ -52,7 +51,7 @@ class profile::base {
     package { ['tox']:
         ensure => installed,
         provider => pip,
-        require => Package['python-pip']
+        require => Package['python2-pip']
     }
 
 }
