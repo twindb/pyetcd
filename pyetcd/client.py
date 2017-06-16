@@ -283,7 +283,7 @@ class Client(object):
         if params:
             uri += "?"
             sep = ""
-            for k, v in sorted(params.iteritems()):
+            for k, v in sorted(params.items()):
                 uri += "%s%s=%s" % (sep, k, v)
                 sep = "&"
         return self._request_call(uri, method=method, **kwargs)
