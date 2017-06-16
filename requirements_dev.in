@@ -1,0 +1,8 @@
+bumpversion
+wheel
+flake8
+tox
+pytest
+mock
+codecov
+pytest-cov
