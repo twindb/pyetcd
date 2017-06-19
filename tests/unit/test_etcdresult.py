@@ -59,12 +59,18 @@ def test_action(payload, expected):
     assert res.action == expected
 
 
-def test_etcd_index():
+@pytest.mark.parametrize('headers', [
+    {
+        'X-Etcd-Index': 2007
+    },
+    {
+        'X-Etcd-Index': '2007'
+    }
+])
+def test_etcd_index(headers):
     response = mock.Mock()
     response.content = '{"action":"get","node":{"key":"/foo","value":"bar","modifiedIndex":7,"createdIndex":7}}'
-    response.headers = {
-        'X-Etcd-Index': 2007
-    }
+    response.headers = headers
     res = EtcdResult(response)
     assert res.x_etcd_index == 2007
 

@@ -255,7 +255,7 @@ class EtcdResult(object):
         Initialise EtcdResult instance
         """
         try:
-            self._x_etcd_index = response.headers['X-Etcd-Index']
+            self._x_etcd_index = int(response.headers['X-Etcd-Index'])
         except (TypeError, AttributeError):
             pass
         try:
