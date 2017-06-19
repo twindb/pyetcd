@@ -39,6 +39,7 @@ upgrade-requirements: pip-tools## Upgrade requirements
 bootstrap: pip-tools ## bootstrap the development environment
 	pip install -U "setuptools==32.3.1"
 	pip install -U "pip==9.0.1"
+	pip install -r requirements_dev.txt
 	pip install --editable .
 
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
