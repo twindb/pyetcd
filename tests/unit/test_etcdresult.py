@@ -2,26 +2,6 @@ import mock
 import pytest
 from pyetcd import EtcdResult, EtcdException, ResponseNode
 
-__author__ = 'aleks'
-
-
-@pytest.fixture
-def payload_self():
-    return """
-{
-    "id": "ce2a822cea30bfca",
-    "leaderInfo": {
-        "leader": "ce2a822cea30bfca",
-        "startTime": "2016-09-19T06:08:51.937661067Z",
-        "uptime": "17h5m58.934381551s"
-    },
-    "name": "default",
-    "recvAppendRequestCnt": 0,
-    "sendAppendRequestCnt": 0,
-    "startTime": "2016-09-19T06:08:51.527241706Z",
-    "state": "StateLeader"
-}"""
-
 
 def test_etcd_result_response(payload_self):
     response = mock.Mock()
@@ -77,6 +57,23 @@ def test_action(payload, expected):
     response.content = payload
     res = EtcdResult(response)
     assert res.action == expected
+
+
+def test_etcd_index():
+    response = mock.Mock()
+    response.content = '{"action":"get","node":{"key":"/foo","value":"bar","modifiedIndex":7,"createdIndex":7}}'
+    response.headers = {
+        'X-Etcd-Index': 2007
+    }
+    res = EtcdResult(response)
+    assert res.x_etcd_index == 2007
+
+
+def test_etcd_noindex():
+    response = mock.Mock()
+    response.content = '{"action":"get","node":{"key":"/foo","value":"bar","modifiedIndex":7,"createdIndex":7}}'
+    res = EtcdResult(response)
+    assert res.x_etcd_index is None
 
 
 @pytest.mark.parametrize('payload,expected', [

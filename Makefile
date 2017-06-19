@@ -26,6 +26,22 @@ BROWSER := python -c "$$BROWSER_PYSCRIPT"
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
+.PHONY: pip-tools
+pip-tools:
+	which pip-compile || pip install -U "pip-tools>=1.6.0"
+
+.PHONY: upgrade-requirements
+upgrade-requirements: pip-tools## Upgrade requirements
+	pip-compile --upgrade --verbose --no-index --output-file requirements.txt requirements.in
+	pip-compile --upgrade --verbose --no-index --output-file requirements_dev.txt requirements_dev.in
+
+.PHONY: bootstrap
+bootstrap: pip-tools ## bootstrap the development environment
+	pip install -U "setuptools==32.3.1"
+	pip install -U "pip==9.0.1"
+	pip install -r requirements_dev.txt
+	pip install --editable .
+
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 
@@ -48,10 +64,10 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 
 lint: ## check style with flake8
-	flake8 pyetcd tests
+	flake8 pyetcd
 
 test: ## run tests quickly with the default Python
-	py.test tests/unit
+	pytest -xv --cov-report term-missing --cov=./pyetcd tests/unit
 
 
 test-all: ## run tests on every Python version with tox
@@ -61,12 +77,7 @@ test-func: ## run functional tests. requires py.test installed
 	pip show pyetcd > /dev/null 2>&1 && pip install -e .
 	py.test tests/functional
 
-coverage: ## check code coverage quickly with the default Python
-	coverage run --source pyetcd py.test
-
-		coverage report -m
-		coverage html
-		$(BROWSER) htmlcov/index.html
+coverage: test ## check code coverage quickly with the default Python
 
 docs: ## generate Sphinx HTML documentation, including API docs
 	rm -f docs/pyetcd.rst
@@ -90,3 +101,14 @@ dist: clean ## builds source and wheel package
 
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
+
+
+docker-start:
+	@docker run \
+		-v $(shell pwd):/pyetcd \
+		-e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" \
+		-e "AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}" \
+		-e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
+		-it \
+		"ubuntu:trusty" \
+		bash -l

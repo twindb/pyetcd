@@ -1,11 +1,11 @@
-pip
 bumpversion
 wheel
-watchdog
 flake8
 tox
-Sphinx
-PyYAML
-pytest
+# Disable pytest (3.1.2) due to a bug
+# https://github.com/pytest-dev/pytest/issues/2501
+pytest>=3.0.0,!=3.1.2
+py>=1.4.29
 mock
-coverage
+codecov
+pytest-cov

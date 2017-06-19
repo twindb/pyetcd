@@ -91,16 +91,15 @@ class Client(object):
             data['ttl'] = int(ttl)
         return self._request_key(key, method='put', data=data)
 
-    def read(self, key, wait=False):
+    def read(self, key, **kwargs):
         """
         Read key value
 
         :param key: Key
-        :param wait: Wait until the key value changes (default=False)
         :return: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
-        return self._request_key(key, wait=wait)
+        return self._request_key(key, params=kwargs)
 
     def delete(self, key):
         """
@@ -283,7 +282,9 @@ class Client(object):
         if params:
             uri += "?"
             sep = ""
-            for k, v in sorted(params.iteritems()):
+            for k, v in sorted(params.items()):
+                if isinstance(v, bool):
+                    v = str(v).lower()
                 uri += "%s%s=%s" % (sep, k, v)
                 sep = "&"
         return self._request_call(uri, method=method, **kwargs)
@@ -297,8 +298,6 @@ class Client(object):
             try:
                 url = u + uri
 
-                if wait:
-                    url += "?wait=true"
                 return EtcdResult(getattr(requests, method)(url, **kwargs))
             except RequestException:
                 pass
