@@ -3,7 +3,6 @@ import pytest
 from pyetcd import EtcdResult, EtcdException, ResponseNode
 
 
-
 def test_etcd_result_response(payload_self):
     response = mock.Mock()
     response.content = payload_self
@@ -58,6 +57,23 @@ def test_action(payload, expected):
     response.content = payload
     res = EtcdResult(response)
     assert res.action == expected
+
+
+def test_etcd_index():
+    response = mock.Mock()
+    response.content = '{"action":"get","node":{"key":"/foo","value":"bar","modifiedIndex":7,"createdIndex":7}}'
+    response.headers = {
+        'X-Etcd-Index': 2007
+    }
+    res = EtcdResult(response)
+    assert res.x_etcd_index == 2007
+
+
+def test_etcd_noindex():
+    response = mock.Mock()
+    response.content = '{"action":"get","node":{"key":"/foo","value":"bar","modifiedIndex":7,"createdIndex":7}}'
+    res = EtcdResult(response)
+    assert res.x_etcd_index is None
 
 
 @pytest.mark.parametrize('payload,expected', [

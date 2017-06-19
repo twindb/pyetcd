@@ -255,6 +255,10 @@ class EtcdResult(object):
         Initialise EtcdResult instance
         """
         try:
+            self._x_etcd_index = response.headers['X-Etcd-Index']
+        except (TypeError, AttributeError):
+            pass
+        try:
             self._response_content = response.content
             self._payload = json.loads(response.content)
             self._raise_for_status(self._payload)
@@ -285,6 +289,13 @@ class EtcdResult(object):
             raise self._exception_codes[error_code](message)
         except KeyError:
             raise EtcdException(message)
+
+    @property
+    def x_etcd_index(self):
+        try:
+            return self._x_etcd_index
+        except AttributeError:
+            return None
 
     @property
     def action(self):

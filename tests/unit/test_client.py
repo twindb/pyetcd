@@ -469,5 +469,3 @@ def test_read_with_params(mock_etcd_result, mock_get, params, url, default_etcd)
     default_etcd.read('/foo', **params)
     mock_get.assert_called_once_with(
         'http://127.0.0.1:2379/v2/keys/foo' + url)
-
-1
