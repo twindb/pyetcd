@@ -2,7 +2,7 @@ bumpversion
 wheel
 flake8
 tox
-pytest
+pytest>=3.0.0
 mock
 codecov
 pytest-cov
