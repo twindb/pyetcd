@@ -294,11 +294,14 @@ class Client(object):
             urls = self._urls
         else:
             urls = [self._urls[0]]
+        error_messages = []
         for u in urls:
             try:
                 url = u + uri
 
                 return EtcdResult(getattr(requests, method)(url, **kwargs))
-            except RequestException:
-                pass
-        raise EtcdException('No more hosts to connect')
+            except RequestException as err:
+                error_messages.append("%s: %s" % (u, err))
+
+        raise EtcdException('No more hosts to connect.\nErrors: %s'
+                            % '\n'.join(error_messages))
