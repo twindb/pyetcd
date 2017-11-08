@@ -71,6 +71,7 @@ class Client(object):
                         host=host,
                         port=port)
             self._urls.append(url)
+        self._session = requests.Session()
 
     def write(self, key, value, ttl=None):
         """
@@ -299,7 +300,8 @@ class Client(object):
             try:
                 url = u + uri
 
-                return EtcdResult(getattr(requests, method)(url, **kwargs))
+                return EtcdResult(getattr(self._session, method)(url,
+                                                                 **kwargs))
             except RequestException as err:
                 error_messages.append("%s: %s" % (u, err))
 
