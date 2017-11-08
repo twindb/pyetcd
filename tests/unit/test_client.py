@@ -71,17 +71,19 @@ def test_client_raises_exception_if_unsupported_protocol():
         Client(protocol='foo')
 
 
-@mock.patch('pyetcd.client.requests')
-def test_write(mock_requests, default_etcd, payload_write_success):
+def test_write(default_etcd, payload_write_success):
+    mock_requests = mock.Mock()
     mock_requests.put.return_value = mock.Mock(content=payload_write_success)
+    default_etcd._session = mock_requests
     response = default_etcd.write('/messsage', 'Hello world')
     assert response.action == 'set'
     assert response.node['value'] == 'Hello world'
 
 
-@mock.patch('pyetcd.client.requests')
-def test_write_ttl(mock_requests, default_etcd, payload_write_ttl_success):
+def test_write_ttl(default_etcd, payload_write_ttl_success):
+    mock_requests = mock.Mock()
     mock_requests.put.return_value = mock.Mock(content=payload_write_ttl_success)
+    default_etcd._session = mock_requests
     response = default_etcd.write('/messsage', 'bar', ttl=5)
     assert response.action == 'set'
     assert response.node['value'] == 'bar'
@@ -95,18 +97,20 @@ def test_write_raises_exception(mock_requests, default_etcd):
         default_etcd.write('/messsage', 'Hello world')
 
 
-@mock.patch('pyetcd.client.requests')
-def test_read(mock_requests, default_etcd, payload_read_success):
+def test_read(default_etcd, payload_read_success):
     mock_response = mock.Mock()
     mock_response.content = payload_read_success
+
+    mock_requests = mock.Mock()
     mock_requests.get.return_value = mock_response
+    default_etcd._session = mock_requests
     response = default_etcd.read('/messsage')
     assert response.action == 'get'
     assert response.node['value'] == 'Hello world'
 
 
-@mock.patch('pyetcd.client.requests.get')
-def test_read_wait(mock_get, default_etcd):
+# @mock.patch('pyetcd.client.requests.get')
+def test_read_wait(default_etcd):
     mock_payload = mock.Mock()
     mock_payload.content = """
             {
@@ -125,11 +129,14 @@ def test_read_wait(mock_get, default_etcd):
                 }
             }
         """
-    mock_get.return_value = mock_payload
+    mock_requests = mock.Mock()
+    mock_requests.get.return_value = mock_payload
+    default_etcd._session = mock_requests
+
     response = default_etcd.read('/messsage', wait=True)
     assert response.action == 'set'
     assert response.node['value'] == 'foo'
-    mock_get.assert_called_once_with(
+    mock_requests.get.assert_called_once_with(
         'http://127.0.0.1:2379/v2/keys/messsage?wait=true')
 
 
@@ -162,10 +169,12 @@ def test_read_exception_unknown_error(mock_requests, default_etcd):
         default_etcd.read('/foo')
 
 
-@mock.patch('pyetcd.client.requests')
-def test_delete(mock_requests, default_etcd, payload_delete_success):
+def test_delete(default_etcd, payload_delete_success):
+    mock_requests = mock.Mock()
     mock_requests.delete.return_value = mock.MagicMock(
         content=payload_delete_success)
+    default_etcd._session = mock_requests
+
     default_etcd.delete('/foo')
     mock_requests.delete.assert_called_once_with('http://127.0.0.1:2379/v2/keys/foo')
 
@@ -180,19 +189,21 @@ def test_delete_exception(mock_requests, default_etcd):
         default_etcd.delete('/foo')
 
 
-@mock.patch('pyetcd.client.requests')
-def test_read_from_second_host(mock_requests, payload_read_success):
+def test_read_from_second_host(payload_read_success):
     mock_response = [
         RequestException,
         mock.MagicMock(content=payload_read_success),
         mock.MagicMock(content=payload_read_success)
     ]
+    mock_requests = mock.Mock()
     mock_requests.get = mock.MagicMock(side_effect=mock_response)
     client = Client(host=[
         '10.0.1.1',
         '10.0.1.2',
         '10.0.1.3'
     ])
+    client._session = mock_requests
+
     assert client.read('/foo').node['value'] == 'Hello world'
 
 
@@ -220,28 +231,33 @@ def test_write_to_second_host(mock_requests, payload_write_success):
         mock.MagicMock(content=payload_write_success),
         mock.MagicMock(content=payload_write_success)
     ]
+
+    mock_requests = mock.Mock()
     mock_requests.put = mock.MagicMock(side_effect=mock_response)
     client = Client(host=[
         '10.0.1.1',
         '10.0.1.2',
         '10.0.1.3'
     ])
+    client._session = mock_requests
+
     assert client.write('/message', 'Hello world').node['value'] == 'Hello world'
 
 
-@mock.patch('pyetcd.client.requests')
-def test_delete_from_second_host(mock_requests, payload_delete_success):
+def test_delete_from_second_host(payload_delete_success):
     mock_response = [
         RequestException,
         mock.MagicMock(content=payload_delete_success),
         mock.MagicMock(content=payload_delete_success)
     ]
+    mock_requests = mock.Mock()
     mock_requests.delete = mock.MagicMock(side_effect=mock_response)
     client = Client(host=[
         '10.0.1.1',
         '10.0.1.2',
         '10.0.1.3'
     ])
+    client._session = mock_requests
     client.delete('/message')
     mock_requests.delete.assert_called_with('http://10.0.1.2:2379/v2/keys/message')
     assert mock_requests.delete.call_count == 2
@@ -264,33 +280,36 @@ def test_read_exception_if_host_down(mock_requests, payload_read_success):
         assert client.read('/foo').node['value'] == 'Hello world'
 
 
-@mock.patch('pyetcd.client.requests')
-def test_client_version(mock_requests, default_etcd):
+def test_client_version(default_etcd):
     payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
     mock_response = [
         mock.MagicMock(content=payload)
     ]
+    mock_requests = mock.Mock()
     mock_requests.get = mock.MagicMock(side_effect=mock_response)
+    default_etcd._session = mock_requests
     assert default_etcd.version() == "2.3.7"
 
 
-@mock.patch('pyetcd.client.requests')
-def test_client_version_server(mock_requests, default_etcd):
+def test_client_version_server(default_etcd):
     payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
     mock_response = [
         mock.MagicMock(content=payload)
     ]
+    mock_requests = mock.Mock()
     mock_requests.get = mock.MagicMock(side_effect=mock_response)
+    default_etcd._session = mock_requests
     assert default_etcd.version_server() == "2.3.7"
 
 
-@mock.patch('pyetcd.client.requests')
-def test_client_version_cluster(mock_requests, default_etcd):
+def test_client_version_cluster(default_etcd):
     payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
     mock_response = [
         mock.MagicMock(content=payload)
     ]
+    mock_requests = mock.Mock()
     mock_requests.get = mock.MagicMock(side_effect=mock_response)
+    default_etcd._session = mock_requests
     assert default_etcd.version_cluster() == "2.3.0"
 
 
@@ -462,10 +481,11 @@ def test_client_update_ttl(mock_update_ttl, default_etcd):
         "?quorum=false&recursive=false&sorted=false"
     ),
 ])
-@mock.patch('pyetcd.client.requests.get')
 @mock.patch.object(EtcdResult, '__init__')
-def test_read_with_params(mock_etcd_result, mock_get, params, url, default_etcd):
+def test_read_with_params(mock_etcd_result, params, url, default_etcd):
+    mock_requests = mock.Mock()
+    default_etcd._session = mock_requests
     mock_etcd_result.return_value = None
     default_etcd.read('/foo', **params)
-    mock_get.assert_called_once_with(
+    mock_requests.get.assert_called_once_with(
         'http://127.0.0.1:2379/v2/keys/foo' + url)
