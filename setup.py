@@ -18,7 +18,7 @@ with open('requirements_dev.txt') as f:
 
 setup(
     name='pyetcd',
-    version='1.6.1',
+    version='1.8.0',
     description="Python library to work with Etcd",
     long_description=readme + '\n\n' + history,
     author="TwinDB Development Team",
@@ -42,7 +42,6 @@ setup(
         "Programming Language :: Python :: 2",
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
