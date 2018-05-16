@@ -1,6 +1,7 @@
 import mock
 import pytest
-from pyetcd import EtcdResult, EtcdException, ResponseNode
+from pyetcd import EtcdResult, EtcdException, ResponseNode, EtcdInvalidResponse, \
+    EtcdEmptyResponse
 
 
 def test_etcd_result_response(payload_self):
@@ -27,7 +28,25 @@ def test_response_node():
     123
 ])
 def test_exception_invalid_payload(payload):
-    with pytest.raises(EtcdException):
+    with pytest.raises(EtcdInvalidResponse):
+        EtcdResult(payload)
+
+
+@pytest.mark.parametrize('content', [
+    '',
+    None,
+])
+def test_exception_empty_content(content):
+    payload = mock.Mock()
+    payload.content = content
+    with pytest.raises(EtcdEmptyResponse):
+        EtcdResult(payload)
+
+
+def test_exception_not_json_content():
+    payload = mock.Mock()
+    payload.content = 'foo'
+    with pytest.raises(EtcdInvalidResponse):
         EtcdResult(payload)
 
 
