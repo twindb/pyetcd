@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to pyetcd's documentation!
-======================================
+==================================
 
 Contents:
 
@@ -14,7 +14,7 @@ Contents:
    readme
    installation
    usage
-   pyetcd
+   modules
    contributing
    authors
    history

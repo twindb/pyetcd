@@ -81,7 +81,8 @@ class Client(object):
         :param ttl: Keys in etcd can be set to expire after a specified number
             of seconds. You can do this by setting a TTL (time to live)
             on the key.
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
         data = {
@@ -96,7 +97,8 @@ class Client(object):
         Read key value
 
         :param key: Key
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
         return self._request_key(key, params=kwargs)
@@ -106,7 +108,8 @@ class Client(object):
         Delete a key
 
         :param key: Key
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
         return self._request_key(key, method='delete')
@@ -116,6 +119,7 @@ class Client(object):
         Return Etcd server version
 
         :return: string with Etcd server version. E.g. '2.3.7'
+        :rtype: str
         """
         response = self._request_call('/version')
         return response.version_etcdserver
@@ -125,6 +129,7 @@ class Client(object):
         Same as .version()
 
         :return: string with Etcd server version. E.g. '2.3.7'
+        :rtype: str
         """
         return self.version()
 
@@ -133,6 +138,7 @@ class Client(object):
         Return Etcd cluster version
 
         :return: string with Etcd cluster version. E.g. '2.3.0'
+        :rtype: str
         """
         response = self._request_call('/version')
         return response.version_etcdcluster
@@ -142,7 +148,8 @@ class Client(object):
         Create directory
 
         :param directory: string with directory name
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
         data = {
@@ -157,7 +164,8 @@ class Client(object):
 
         :param directory: string with directory name
         :param recursive: recursively delete directory if not empty
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
 
@@ -186,12 +194,11 @@ class Client(object):
             it is an update request; if prevExist is False,
             it is a create request.
         :param ttl: set ttl on the key in seconds
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error.
-
-            EtcdNodeExist if condition prev_exist=False fails.
-
-            EtcdTestFailed if condition prev_value='bar' fails.
+        :raise EtcdNodeExist: if condition ``prev_exist=False`` fails.
+        :raise EtcdTestFailed: if condition ``prev_value='bar'`` fails.
         """
         data = {
             'value': value
@@ -227,10 +234,10 @@ class Client(object):
         :param key: the key
         :param prev_value: checks the previous value of the key.
         :param prev_index: checks the previous modifiedIndex of the key.
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error.
-
-            EtcdNodeExist if any condition fails.
+        :raise EtcdNodeExist: if any condition fails.
         """
         params = None
 
@@ -252,10 +259,10 @@ class Client(object):
 
         :param key: the key
         :param ttl: new ttl
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error.
-
-            EtcdKeyNotFound if the key doesn't exist
+        :raise EtcdKeyNotFound: if the key doesn't exist
         """
         data = {
             'ttl': ttl,
@@ -273,7 +280,8 @@ class Client(object):
         :param method: HTTP method in lower case (put, get, post, etc)
         :param params: dictionary with parameters that will be added to URI
         :param kwargs: keyword arguments to be passed down to _request_call()
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         """
         uri = "/{version_prefix}/keys{key}".format(
             version_prefix=self._version_prefix,

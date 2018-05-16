@@ -206,13 +206,28 @@ class EtcdClientInternal(EtcdException):
     """
 
 
+class EtcdInvalidResponse(EtcdException):
+    """
+    Error that raises if response from etcd is invalid
+    """
+
+
+class EtcdEmptyResponse(EtcdInvalidResponse):
+    """
+    Error that raises if response from etcd is empty
+    """
+
+
 class EtcdResult(object):
     """
-    Response from Etcd API
+    Response from Etcd API.
 
     :param response: Response from server as ``requests.(get|post|put)``
         returns.
-    :raise EtcdException: if payload is invalid or contains errorCode.
+    :type response: requests.Response
+    :raise EtcdException: if response contains non-200 errorCode.
+    :raise EtcdInvalidResponse: if payload is invalid.
+    :raise EtcdEmptyResponse: if response content from etcd is empty.
     """
     _payload = None
     _exception_codes = {
@@ -259,11 +274,13 @@ class EtcdResult(object):
         except (TypeError, AttributeError):
             pass
         try:
+            if response.content in ['', None]:
+                raise EtcdEmptyResponse('Empty response from etcd')
             self._response_content = response.content
             self._payload = json.loads(response.content)
             self._raise_for_status(self._payload)
         except (ValueError, TypeError, AttributeError) as err:
-            raise EtcdException(err)
+            raise EtcdInvalidResponse(err)
 
     def __repr__(self):
         return self._response_content

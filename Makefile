@@ -30,16 +30,12 @@ help:
 pip-tools:
 	which pip-compile || pip install -U "pip-tools>=1.6.0"
 
-.PHONY: upgrade-requirements
-upgrade-requirements: pip-tools## Upgrade requirements
-	pip-compile --upgrade --verbose --no-index --output-file requirements.txt requirements.in
-	pip-compile --upgrade --verbose --no-index --output-file requirements_dev.txt requirements_dev.in
 
 .PHONY: bootstrap
 bootstrap: pip-tools ## bootstrap the development environment
 	pip install -U "setuptools==32.3.1"
-	pip install -U "pip==9.0.1"
-	pip install -r requirements_dev.txt
+	pip install -U pip
+	pip install -r requirements_dev.txt -r requirements.txt
 	pip install --editable .
 
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
