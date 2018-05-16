@@ -1,26 +1,7 @@
 import mock
 import pytest
-from pyetcd import EtcdResult, EtcdException, ResponseNode
-
-__author__ = 'aleks'
-
-
-@pytest.fixture
-def payload_self():
-    return """
-{
-    "id": "ce2a822cea30bfca",
-    "leaderInfo": {
-        "leader": "ce2a822cea30bfca",
-        "startTime": "2016-09-19T06:08:51.937661067Z",
-        "uptime": "17h5m58.934381551s"
-    },
-    "name": "default",
-    "recvAppendRequestCnt": 0,
-    "sendAppendRequestCnt": 0,
-    "startTime": "2016-09-19T06:08:51.527241706Z",
-    "state": "StateLeader"
-}"""
+from pyetcd import EtcdResult, EtcdException, ResponseNode, EtcdInvalidResponse, \
+    EtcdEmptyResponse
 
 
 def test_etcd_result_response(payload_self):
@@ -47,7 +28,25 @@ def test_response_node():
     123
 ])
 def test_exception_invalid_payload(payload):
-    with pytest.raises(EtcdException):
+    with pytest.raises(EtcdInvalidResponse):
+        EtcdResult(payload)
+
+
+@pytest.mark.parametrize('content', [
+    '',
+    None,
+])
+def test_exception_empty_content(content):
+    payload = mock.Mock()
+    payload.content = content
+    with pytest.raises(EtcdEmptyResponse):
+        EtcdResult(payload)
+
+
+def test_exception_not_json_content():
+    payload = mock.Mock()
+    payload.content = 'foo'
+    with pytest.raises(EtcdInvalidResponse):
         EtcdResult(payload)
 
 
@@ -77,6 +76,29 @@ def test_action(payload, expected):
     response.content = payload
     res = EtcdResult(response)
     assert res.action == expected
+
+
+@pytest.mark.parametrize('headers', [
+    {
+        'X-Etcd-Index': 2007
+    },
+    {
+        'X-Etcd-Index': '2007'
+    }
+])
+def test_etcd_index(headers):
+    response = mock.Mock()
+    response.content = '{"action":"get","node":{"key":"/foo","value":"bar","modifiedIndex":7,"createdIndex":7}}'
+    response.headers = headers
+    res = EtcdResult(response)
+    assert res.x_etcd_index == 2007
+
+
+def test_etcd_noindex():
+    response = mock.Mock()
+    response.content = '{"action":"get","node":{"key":"/foo","value":"bar","modifiedIndex":7,"createdIndex":7}}'
+    res = EtcdResult(response)
+    assert res.x_etcd_index is None
 
 
 @pytest.mark.parametrize('payload,expected', [

@@ -3,7 +3,7 @@ import json
 
 __author__ = 'TwinDB Development Team'
 __email__ = 'dev@twindb.com'
-__version__ = '1.5.0'
+__version__ = '1.9.0'
 
 
 # Exceptions
@@ -206,13 +206,28 @@ class EtcdClientInternal(EtcdException):
     """
 
 
+class EtcdInvalidResponse(EtcdException):
+    """
+    Error that raises if response from etcd is invalid
+    """
+
+
+class EtcdEmptyResponse(EtcdInvalidResponse):
+    """
+    Error that raises if response from etcd is empty
+    """
+
+
 class EtcdResult(object):
     """
-    Response from Etcd API
+    Response from Etcd API.
 
     :param response: Response from server as ``requests.(get|post|put)``
         returns.
-    :raise EtcdException: if payload is invalid or contains errorCode.
+    :type response: requests.Response
+    :raise EtcdException: if response contains non-200 errorCode.
+    :raise EtcdInvalidResponse: if payload is invalid.
+    :raise EtcdEmptyResponse: if response content from etcd is empty.
     """
     _payload = None
     _exception_codes = {
@@ -255,11 +270,17 @@ class EtcdResult(object):
         Initialise EtcdResult instance
         """
         try:
+            self._x_etcd_index = int(response.headers['X-Etcd-Index'])
+        except (TypeError, AttributeError):
+            pass
+        try:
+            if response.content in ['', None]:
+                raise EtcdEmptyResponse('Empty response from etcd')
             self._response_content = response.content
             self._payload = json.loads(response.content)
             self._raise_for_status(self._payload)
         except (ValueError, TypeError, AttributeError) as err:
-            raise EtcdException(err)
+            raise EtcdInvalidResponse(err)
 
     def __repr__(self):
         return self._response_content
@@ -285,6 +306,13 @@ class EtcdResult(object):
             raise self._exception_codes[error_code](message)
         except KeyError:
             raise EtcdException(message)
+
+    @property
+    def x_etcd_index(self):
+        try:
+            return self._x_etcd_index
+        except AttributeError:
+            return None
 
     @property
     def action(self):

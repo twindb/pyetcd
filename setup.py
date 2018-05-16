@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from pip.req import parse_requirements
 from setuptools import setup
 
 with open('README.rst') as readme_file:
@@ -9,17 +8,17 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = [
-    'requests',
-    'pip'
-]
+with open('requirements.txt') as f:
+    requirements = f.read().strip().split('\n')
 
-test_requirements = [str(ir.req) for ir in parse_requirements('requirements_dev.txt', session=False)]
+
+with open('requirements_dev.txt') as f:
+    test_requirements = f.read().strip().split('\n')
 
 
 setup(
     name='pyetcd',
-    version='1.5.0',
+    version='1.9.0',
     description="Python library to work with Etcd",
     long_description=readme + '\n\n' + history,
     author="TwinDB Development Team",
@@ -41,12 +40,11 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
         "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
     test_suite='tests',
     tests_require=test_requirements

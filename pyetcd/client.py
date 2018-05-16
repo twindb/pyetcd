@@ -71,6 +71,7 @@ class Client(object):
                         host=host,
                         port=port)
             self._urls.append(url)
+        self._session = requests.Session()
 
     def write(self, key, value, ttl=None):
         """
@@ -81,7 +82,8 @@ class Client(object):
         :param ttl: Keys in etcd can be set to expire after a specified number
             of seconds. You can do this by setting a TTL (time to live)
             on the key.
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
         data = {
@@ -91,23 +93,24 @@ class Client(object):
             data['ttl'] = int(ttl)
         return self._request_key(key, method='put', data=data)
 
-    def read(self, key, wait=False):
+    def read(self, key, **kwargs):
         """
         Read key value
 
         :param key: Key
-        :param wait: Wait until the key value changes (default=False)
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
-        return self._request_key(key, wait=wait)
+        return self._request_key(key, params=kwargs)
 
     def delete(self, key):
         """
         Delete a key
 
         :param key: Key
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
         return self._request_key(key, method='delete')
@@ -117,6 +120,7 @@ class Client(object):
         Return Etcd server version
 
         :return: string with Etcd server version. E.g. '2.3.7'
+        :rtype: str
         """
         response = self._request_call('/version')
         return response.version_etcdserver
@@ -126,6 +130,7 @@ class Client(object):
         Same as .version()
 
         :return: string with Etcd server version. E.g. '2.3.7'
+        :rtype: str
         """
         return self.version()
 
@@ -134,6 +139,7 @@ class Client(object):
         Return Etcd cluster version
 
         :return: string with Etcd cluster version. E.g. '2.3.0'
+        :rtype: str
         """
         response = self._request_call('/version')
         return response.version_etcdcluster
@@ -143,7 +149,8 @@ class Client(object):
         Create directory
 
         :param directory: string with directory name
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
         data = {
@@ -158,7 +165,8 @@ class Client(object):
 
         :param directory: string with directory name
         :param recursive: recursively delete directory if not empty
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error
         """
 
@@ -170,8 +178,11 @@ class Client(object):
 
         return self._request_key(directory, params=params, method='delete')
 
-    def compare_and_swap(self, key, value, prev_value=None, prev_index=None,
-                         prev_exist=None):
+    def compare_and_swap(self, key, value,
+                         prev_value=None,
+                         prev_index=None,
+                         prev_exist=None,
+                         ttl=None):
         """
         This command will set the value of a key only if the client-provided
         conditions are equal to the current conditions.
@@ -181,17 +192,21 @@ class Client(object):
         :param prev_value: checks the previous value of the key.
         :param prev_index: checks the previous modifiedIndex of the key.
         :param prev_exist: checks existence of the key: if prevExist is True,
-        it is an update request; if prevExist is False, it is a create request.
-        :return: EtcdResult
+            it is an update request; if prevExist is False,
+            it is a create request.
+        :param ttl: set ttl on the key in seconds
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error.
-
-            EtcdNodeExist if condition prev_exist=False fails.
-
-            EtcdTestFailed if condition prev_value='bar' fails.
+        :raise EtcdNodeExist: if condition ``prev_exist=False`` fails.
+        :raise EtcdTestFailed: if condition ``prev_value='bar'`` fails.
         """
         data = {
             'value': value
         }
+        if ttl:
+            data['ttl'] = ttl
+
         params = None
 
         if prev_exist is not None:
@@ -220,10 +235,10 @@ class Client(object):
         :param key: the key
         :param prev_value: checks the previous value of the key.
         :param prev_index: checks the previous modifiedIndex of the key.
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         :raise EtcdException: if etcd responds with error or HTTP error.
-
-            EtcdNodeExist if any condition fails.
+        :raise EtcdNodeExist: if any condition fails.
         """
         params = None
 
@@ -239,6 +254,25 @@ class Client(object):
 
         return self._request_key(key, method='delete', params=params)
 
+    def update_ttl(self, key, ttl):
+        """
+        Update key's ttl
+
+        :param key: the key
+        :param ttl: new ttl
+        :return: Result of operation.
+        :rtype: EtcdResult
+        :raise EtcdException: if etcd responds with error or HTTP error.
+        :raise EtcdKeyNotFound: if the key doesn't exist
+        """
+        data = {
+            'ttl': ttl,
+            'refresh': 'true',
+            'prevExist': 'true'
+        }
+
+        return self._request_key(key, method='put', data=data)
+
     def _request_key(self, key, method='get', params=None, **kwargs):
         """
         Make an API call on a key
@@ -247,7 +281,8 @@ class Client(object):
         :param method: HTTP method in lower case (put, get, post, etc)
         :param params: dictionary with parameters that will be added to URI
         :param kwargs: keyword arguments to be passed down to _request_call()
-        :return: EtcdResult
+        :return: Result of operation.
+        :rtype: EtcdResult
         """
         uri = "/{version_prefix}/keys{key}".format(
             version_prefix=self._version_prefix,
@@ -256,7 +291,9 @@ class Client(object):
         if params:
             uri += "?"
             sep = ""
-            for k, v in sorted(params.iteritems()):
+            for k, v in sorted(params.items()):
+                if isinstance(v, bool):
+                    v = str(v).lower()
                 uri += "%s%s=%s" % (sep, k, v)
                 sep = "&"
         return self._request_call(uri, method=method, **kwargs)
@@ -266,13 +303,15 @@ class Client(object):
             urls = self._urls
         else:
             urls = [self._urls[0]]
+        error_messages = []
         for u in urls:
             try:
                 url = u + uri
 
-                if wait:
-                    url += "?wait=true"
-                return EtcdResult(getattr(requests, method)(url, **kwargs))
-            except RequestException:
-                pass
-        raise EtcdException('No more hosts to connect')
+                return EtcdResult(getattr(self._session, method)(url,
+                                                                 **kwargs))
+            except RequestException as err:
+                error_messages.append("%s: %s" % (u, err))
+
+        raise EtcdException('No more hosts to connect.\nErrors: %s'
+                            % '\n'.join(error_messages))

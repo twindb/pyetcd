@@ -102,3 +102,14 @@ def test_client_cad_prev_index(client):
     with pytest.raises(EtcdTestFailed):
         client.compare_and_delete('/foo', prev_index=modifiedIndex)
 
+
+def test_client_cas_prev_exist_ttl(client):
+    client.compare_and_swap('/foo', 'bar', ttl=100)
+    with pytest.raises(EtcdNodeExist):
+        client.compare_and_swap('/foo', 'bar2', prev_exist=False)
+
+
+def test_client_update_ttl(client):
+    client.write('/foo', 'bar', ttl=100)
+    r = client.update_ttl('/foo', 1000)
+    assert r.node['ttl'] == 1000
