@@ -389,4 +389,3 @@ class EtcdResult(object):
     def health(self):
         """name"""
         return self._get_property('health') == "true"
-
