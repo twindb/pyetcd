@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""pyetcd is a module to work with etcd cluster"""
 import json
 
 __author__ = 'TwinDB Development Team'
@@ -271,8 +271,8 @@ class EtcdResult(object):
         """
         try:
             self._x_etcd_index = int(response.headers['X-Etcd-Index'])
-        except (TypeError, AttributeError):
-            pass
+        except (TypeError, AttributeError, KeyError):
+            self._x_etcd_index = None
         try:
             if response.content in ['', None]:
                 raise EtcdEmptyResponse('Empty response from etcd')
@@ -309,6 +309,7 @@ class EtcdResult(object):
 
     @property
     def x_etcd_index(self):
+        """current etcd index that represents key modification version."""
         try:
             return self._x_etcd_index
         except AttributeError:
@@ -325,7 +326,7 @@ class EtcdResult(object):
         return self._get_property('node')
 
     @property
-    def prevNode(self):
+    def prevNode(self):  # pylint: disable=invalid-name
         """Node class instance. It holds the previous key value."""
         return self._get_property('prevNode')
 
@@ -350,12 +351,12 @@ class EtcdResult(object):
         return self._get_property('followers')
 
     @property
-    def id(self):
+    def id(self):  # pylint: disable=invalid-name
         """id"""
         return self._get_property('id')
 
     @property
-    def leaderInfo(self):
+    def leaderInfo(self):  # pylint: disable=invalid-name
         """leaderInfo"""
         return self._get_property('leaderInfo')
 
@@ -365,17 +366,17 @@ class EtcdResult(object):
         return self._get_property('name')
 
     @property
-    def recvAppendRequestCnt(self):
+    def recvAppendRequestCnt(self):  # pylint: disable=invalid-name
         """recvAppendRequestCnt"""
         return self._get_property('recvAppendRequestCnt')
 
     @property
-    def sendAppendRequestCnt(self):
+    def sendAppendRequestCnt(self):  # pylint: disable=invalid-name
         """sendAppendRequestCnt"""
         return self._get_property('sendAppendRequestCnt')
 
     @property
-    def startTime(self):
+    def startTime(self):  # pylint: disable=invalid-name
         """startTime"""
         return self._get_property('startTime')
 
@@ -384,32 +385,8 @@ class EtcdResult(object):
         """state"""
         return self._get_property('state')
 
+    @property
+    def health(self):
+        """name"""
+        return self._get_property('health') == "true"
 
-class ResponseNode(object):
-    """
-    Etcd response includes information about nodes.
-
-    :param key: the HTTP path to which the request was made.
-        We set /message to Hello world, so the key field is /message.
-        etcd uses a file-system-like structure to represent
-        the key-value pairs, therefore all keys start with /.
-    :param value: the value of the key after resolving the request.
-    :param created_index: an index is a unique, monotonically-incrementing
-        integer created for each change to etcd. This specific index reflects
-        the point in the etcd state member at which a given key was created
-    :param modified_index: like node.createdIndex, this attribute is also
-        an etcd index. Actions that cause the value to change include set,
-        delete, update, create, compareAndSwap and compareAndDelete.
-        Since the get and watch commands do not change state in the store,
-        they do not change the value of node.modifiedIndex.
-    """
-    def __init__(self, key=None, value=None,
-                 created_index=None,
-                 modified_index=None):
-        """
-        Initialise ResponseNode instance
-        """
-        self.modifiedIndex = modified_index
-        self.createdIndex = created_index
-        self.value = value
-        self.key = key

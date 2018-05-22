@@ -1,4 +1,6 @@
-# -*- coding: utf-8 -*-
+"""module to connect to an etcd node and perform low rest API requests."""
+import json
+
 import requests
 from requests import RequestException
 
@@ -15,52 +17,56 @@ class ClientException(Exception):
 
 class Client(object):
     """
-    Etcd Client class
+    Etcd Client class.
 
-    :param host: etcd node hostname or list of hostnames
-        or list of tuples (hostname, port) (default='127.0.0.1')
-    :param port: TCP port to connect to (default=2379)
-    :param srv_domain: Domain name if DNS discovery is used
-    :param version_prefix: API version prefix (default='v2')
-    :param allow_reconnect: If client fails to connect to a cluster node
-        connect to the next node in the cluster
-    :param protocol: Protocol to connect to the cluster (default='http')
+    :param kwargs: Keyword arguments:
+
+        - **host** (str, list(str), list(tuple)) - etcd node hostname
+            or list of hostnames
+            or list of tuples (hostname, port).
+            Default is '127.0.0.1'.
+        - **port** (int) - TCP port to connect to. Default is 2379.
+        - **srv_domain** (str) - Domain name if DNS discovery is used
+        - **version_prefix** (str) - API version prefix. Default is 'v2'.
+        - **allow_reconnect** (bool) - If client fails to connect to
+            a cluster node connect to the next node in the cluster.
+            Default is True.
+        - **protocol** (str) - Protocol to connect to the cluster.
+            Default is 'http'.
     :raise ClientException: if any errors
+    :raise NotImplementedError: if there is an attempt to use unsupported
+        DNS discovery.
     """
-    def __init__(self,
-                 host='127.0.0.1',
-                 port=2379,
-                 srv_domain=None,
-                 version_prefix='v2',
-                 protocol='http',
-                 allow_reconnect=True):
-        # TODO: implement DNS discovery
-        if srv_domain:
-            raise ClientException('Not implemented')
+    def __init__(self, **kwargs):
+        if 'srv_domain' in kwargs:
+            raise NotImplementedError('DNS discovery is not implemented')
 
-        self._allow_reconnect = allow_reconnect
+        self._allow_reconnect = kwargs.get('allow_reconnect', True)
+        protocol = kwargs.get('protocol', 'http')
         if protocol in SUPPORTED_PROTOCOLS:
             self._protocol = protocol
         else:
             raise ClientException('Protocol %s is unsupported' % protocol)
-        self._version_prefix = version_prefix
-        self._srv_domain = srv_domain
+        self._version_prefix = kwargs.get('version_prefix', 'v2')
+        self._srv_domain = None
         self._hosts = []
         self._urls = []
+        host = kwargs.get('host', '127.0.0.1')
+        port = kwargs.get('port', 2379)
         if isinstance(host, list):
-            for h in host:
-                if isinstance(h, tuple):
-                    self._hosts.append(h)
+            for host_item in host:
+                if isinstance(host_item, tuple):
+                    self._hosts.append(host_item)
                     url = "{protocol}://{host}:{port}" \
                         .format(protocol=self._protocol,
-                                host=h[0],
-                                port=h[1])
+                                host=host_item[0],
+                                port=host_item[1])
                     self._urls.append(url)
                 else:
-                    self._hosts.append((h, port))
+                    self._hosts.append((host_item, port))
                     url = "{protocol}://{host}:{port}" \
                         .format(protocol=self._protocol,
-                                host=h,
+                                host=host_item,
                                 port=port)
                     self._urls.append(url)
 
@@ -144,6 +150,14 @@ class Client(object):
         response = self._request_call('/version')
         return response.version_etcdcluster
 
+    @property
+    def health(self):
+        """
+        :return: True if the node is healthy
+        :rtype: bool
+        """
+        return self._request_call('/health').health
+
     def mkdir(self, directory):
         """
         Create directory
@@ -178,11 +192,13 @@ class Client(object):
 
         return self._request_key(directory, params=params, method='delete')
 
-    def compare_and_swap(self, key, value,
-                         prev_value=None,
-                         prev_index=None,
-                         prev_exist=None,
-                         ttl=None):
+    def compare_and_swap(  # pylint: disable=too-many-arguments
+            self,
+            key, value,
+            prev_value=None,
+            prev_index=None,
+            prev_exist=None,
+            ttl=None):
         """
         This command will set the value of a key only if the client-provided
         conditions are equal to the current conditions.
@@ -280,6 +296,7 @@ class Client(object):
         :param key: key string. must start with '/'
         :param method: HTTP method in lower case (put, get, post, etc)
         :param params: dictionary with parameters that will be added to URI
+        :type params: dict
         :param kwargs: keyword arguments to be passed down to _request_call()
         :return: Result of operation.
         :rtype: EtcdResult
@@ -291,27 +308,33 @@ class Client(object):
         if params:
             uri += "?"
             sep = ""
-            for k, v in sorted(params.items()):
-                if isinstance(v, bool):
-                    v = str(v).lower()
-                uri += "%s%s=%s" % (sep, k, v)
+            for param, value in sorted(params.items()):
+                if isinstance(value, bool):
+                    value = str(value).lower()
+                uri += "%s%s=%s" % (sep, param, value)
                 sep = "&"
         return self._request_call(uri, method=method, **kwargs)
 
-    def _request_call(self, uri, method='get', wait=False, **kwargs):
+    def _request_call(self, uri, method='get', **kwargs):
         if self._allow_reconnect:
             urls = self._urls
         else:
             urls = [self._urls[0]]
         error_messages = []
-        for u in urls:
+        for endpoint in urls:
             try:
-                url = u + uri
+                url = endpoint + uri
 
-                return EtcdResult(getattr(self._session, method)(url,
-                                                                 **kwargs))
+                return EtcdResult(
+                    getattr(self._session, method)(
+                        url,
+                        **kwargs
+                    )
+                )
             except RequestException as err:
-                error_messages.append("%s: %s" % (u, err))
+                error_messages.append("%s: %s" % (endpoint, err))
 
-        raise EtcdException('No more hosts to connect.\nErrors: %s'
-                            % '\n'.join(error_messages))
+        raise EtcdException(
+            'No more hosts to connect.\nErrors: %s'
+            % '\n'.join(error_messages)
+        )

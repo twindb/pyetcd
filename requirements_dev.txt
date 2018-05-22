@@ -1,8 +1,9 @@
 bumpversion
-flake8
 tox
-pytest>=3.5.1
-py>=1.5.3
 mock
 codecov
+pytest
 pytest-cov
+pylint
+pycodestyle
+sphinx
