@@ -16,7 +16,7 @@ from pyetcd.client import Client, ClientException
 
 
 def test_srv_not_implemented(default_etcd):
-    with pytest.raises(ClientException):
+    with pytest.raises(NotImplementedError):
         Client(srv_domain='foo.bar')
 
     with pytest.raises(EtcdException):
@@ -278,17 +278,6 @@ def test_read_exception_if_host_down(mock_requests, payload_read_success):
     ], allow_reconnect=False)
     with pytest.raises(EtcdException):
         assert client.read('/foo').node['value'] == 'Hello world'
-
-
-def test_client_version(default_etcd):
-    payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
-    mock_response = [
-        mock.MagicMock(content=payload)
-    ]
-    mock_requests = mock.Mock()
-    mock_requests.get = mock.MagicMock(side_effect=mock_response)
-    default_etcd._session = mock_requests
-    assert default_etcd.version() == "2.3.7"
 
 
 def test_client_version_server(default_etcd):

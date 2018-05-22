@@ -26,20 +26,12 @@ BROWSER := python -c "$$BROWSER_PYSCRIPT"
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-.PHONY: pip-tools
-pip-tools:
-	which pip-compile || pip install -U "pip-tools>=1.6.0"
-
-.PHONY: upgrade-requirements
-upgrade-requirements: pip-tools## Upgrade requirements
-	pip-compile --upgrade --verbose --no-index --output-file requirements.txt requirements.in
-	pip-compile --upgrade --verbose --no-index --output-file requirements_dev.txt requirements_dev.in
 
 .PHONY: bootstrap
-bootstrap: pip-tools ## bootstrap the development environment
+bootstrap: ## bootstrap the development environment
 	pip install -U "setuptools==32.3.1"
-	pip install -U "pip==9.0.1"
-	pip install -r requirements_dev.txt
+	pip install -U pip
+	pip install -r requirements_dev.txt -r requirements.txt
 	pip install --editable .
 
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
@@ -63,8 +55,9 @@ clean-test: ## remove test and coverage artifacts
 	rm -f .coverage
 	rm -fr htmlcov/
 
-lint: ## check style with flake8
-	flake8 pyetcd
+lint: ## run linter
+	pylint pyetcd
+	pycodestyle pyetcd
 
 test: ## run tests quickly with the default Python
 	pytest -xv --cov-report term-missing --cov=./pyetcd tests/unit
@@ -73,9 +66,9 @@ test: ## run tests quickly with the default Python
 test-all: ## run tests on every Python version with tox
 	tox
 
-test-func: ## run functional tests. requires py.test installed
+test-func: ## run functional tests
 	pip show pyetcd > /dev/null 2>&1 && pip install -e .
-	py.test tests/functional
+	pytest -svx tests/functional
 
 coverage: test ## check code coverage quickly with the default Python
 
@@ -87,17 +80,6 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	$(MAKE) -C docs html
 	$(BROWSER) docs/_build/html/index.html
 
-servedocs: docs ## compile the docs watching for changes
-	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
-
-release: clean ## package and upload a release
-	python setup.py sdist upload
-	python setup.py bdist_wheel upload
-
-dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
-	ls -l dist
 
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
