@@ -29,5 +29,3 @@ destroy-all: ## destroy all vagrant machines
 .PHONY: start-infra2
 start-infra2: ## start the infra2 node
 	vagrant up --provision infra2
-
-

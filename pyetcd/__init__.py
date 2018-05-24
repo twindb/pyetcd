@@ -324,10 +324,7 @@ class EtcdResult(object):
     @property
     def x_etcd_index(self):
         """current etcd index that represents key modification version."""
-        try:
-            return self._x_etcd_index
-        except AttributeError:
-            return None
+        return self._x_etcd_index
 
     @property
     def action(self):
