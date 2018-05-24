@@ -1,6 +1,4 @@
 """module to connect to an etcd node and perform low rest API requests."""
-import json
-
 import requests
 from requests import RequestException
 
