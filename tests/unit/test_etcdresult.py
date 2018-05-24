@@ -1,4 +1,6 @@
+# noinspection PyPackageRequirements
 import mock
+# noinspection PyPackageRequirements
 import pytest
 from pyetcd import EtcdResult, EtcdException, EtcdInvalidResponse, \
     EtcdEmptyResponse
@@ -7,6 +9,7 @@ from pyetcd import EtcdResult, EtcdException, EtcdInvalidResponse, \
 def test_etcd_result_response(payload_self):
     response = mock.Mock()
     response.content = payload_self
+    # noinspection PyTypeChecker
     r = EtcdResult(response)
     assert r.__repr__() == payload_self
 
@@ -29,13 +32,40 @@ def test_exception_empty_content(content):
     payload = mock.Mock()
     payload.content = content
     with pytest.raises(EtcdEmptyResponse):
+        # noinspection PyTypeChecker
         EtcdResult(payload)
+
+
+@pytest.mark.parametrize('content', [
+    '',
+    None,
+])
+def test_exception_empty_content(content):
+    payload = mock.Mock()
+    payload.content = content
+    with pytest.raises(EtcdEmptyResponse):
+        # noinspection PyTypeChecker
+        EtcdResult(payload)
+
+
+# HTTP allows no content if status codes are 204, 205
+# https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+@pytest.mark.parametrize('code', [
+    204, 205
+])
+def test_exception_legit_empty_content(code):
+    payload = mock.Mock()
+    payload.content = ''
+    payload.status_code = code
+    # noinspection PyTypeChecker
+    assert EtcdResult(payload).action is None
 
 
 def test_exception_not_json_content():
     payload = mock.Mock()
     payload.content = 'foo'
     with pytest.raises(EtcdInvalidResponse):
+        # noinspection PyTypeChecker
         EtcdResult(payload)
 
 
@@ -63,6 +93,7 @@ def test_exception_not_json_content():
 def test_action(payload, expected):
     response = mock.Mock()
     response.content = payload
+    # noinspection PyTypeChecker
     res = EtcdResult(response)
     assert res.action == expected
 
@@ -79,6 +110,7 @@ def test_etcd_index(headers):
     response = mock.Mock()
     response.content = '{"action":"get","node":{"key":"/foo","value":"bar","modifiedIndex":7,"createdIndex":7}}'
     response.headers = headers
+    # noinspection PyTypeChecker
     res = EtcdResult(response)
     assert res.x_etcd_index == 2007
 
@@ -86,6 +118,7 @@ def test_etcd_index(headers):
 def test_etcd_noindex():
     response = mock.Mock()
     response.content = '{"action":"get","node":{"key":"/foo","value":"bar","modifiedIndex":7,"createdIndex":7}}'
+    # noinspection PyTypeChecker
     res = EtcdResult(response)
     assert res.x_etcd_index is None
 
@@ -110,6 +143,7 @@ def test_etcd_noindex():
 def test_node(payload, expected):
     response = mock.Mock()
     response.content = payload
+    # noinspection PyTypeChecker
     res = EtcdResult(response)
     assert res.node == expected
 
@@ -127,6 +161,7 @@ def test_node_exception(payload):
     response = mock.Mock()
     response.content = payload
     with pytest.raises(EtcdException):
+        # noinspection PyTypeChecker
         EtcdResult(response)
 
 
@@ -140,10 +175,10 @@ def test_node_exception(payload):
         "value": "Hello etcd"
     },
     "prevNode": {
-    	"createdIndex": 2,
-    	"key": "/message",
-    	"value": "Hello world",
-    	"modifiedIndex": 2
+        "createdIndex": 2,
+        "key": "/message",
+        "value": "Hello world",
+        "modifiedIndex": 2
     }
 }""",
      {
@@ -156,6 +191,7 @@ def test_node_exception(payload):
 def test_prev_node(payload, expected):
     response = mock.Mock()
     response.content = payload
+    # noinspection PyTypeChecker
     res = EtcdResult(response)
     assert res.prevNode == expected
 
@@ -164,6 +200,7 @@ def test_version():
     payload = '{"etcdserver":"2.3.7","etcdcluster":"2.3.0"}'
     response = mock.Mock()
     response.content = payload
+    # noinspection PyTypeChecker
     res = EtcdResult(response)
     assert res.version_etcdcluster == "2.3.0"
     assert res.version_etcdserver == "2.3.7"
@@ -205,6 +242,7 @@ def test_leader():
     """
     response = mock.Mock()
     response.content = payload
+    # noinspection PyTypeChecker
     res = EtcdResult(response)
     assert res.leader == "924e2e83e93f2560"
     assert res.followers == {
@@ -240,6 +278,7 @@ def test_leader():
 def test_selfstats(payload_self):
     response = mock.Mock()
     response.content = payload_self
+    # noinspection PyTypeChecker
     res = EtcdResult(response)
     assert res.id == "ce2a822cea30bfca"
     assert res.leaderInfo == {
@@ -252,4 +291,3 @@ def test_selfstats(payload_self):
     assert res.sendAppendRequestCnt == 0
     assert res.startTime == "2016-09-19T06:08:51.527241706Z"
     assert res.state == "StateLeader"
-

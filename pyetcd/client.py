@@ -287,6 +287,38 @@ class Client(object):
 
         return self._request_key(key, method='put', data=data)
 
+    def add_member(self, peer_urls):
+        """
+        Add a node to the cluster.
+
+        :param peer_urls: List of URL for inter-peer communication.
+            For example::
+
+                ["http://10.0.0.10:2380"]
+
+        :return: Information about the newly added node.
+        :rtype: EtcdResult
+        """
+        return self._request_call(
+            '/v2/members',
+            method='post',
+            json={
+                'peerURLs': peer_urls
+            }
+        )
+
+    def remove_member(self, member_id):
+        """
+        Remove a node from the cluster.
+
+        :param member_id: etcd identifier of the node.
+            For example, ``272e204152``.
+        """
+        self._request_call(
+            '/v2/members/%s' % member_id,
+            method='delete'
+        )
+
     def _request_key(self, key, method='get', params=None, **kwargs):
         """
         Make an API call on a key

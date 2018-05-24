@@ -268,19 +268,33 @@ class EtcdResult(object):
     def __init__(self, response):
         """
         Initialise EtcdResult instance
+
+        :param response: Response from etcd
+        :type response: requests.models.Response
         """
         try:
             self._x_etcd_index = int(response.headers['X-Etcd-Index'])
         except (TypeError, AttributeError, KeyError):
             self._x_etcd_index = None
+
         try:
-            if response.content in ['', None]:
-                raise EtcdEmptyResponse('Empty response from etcd')
-            self._response_content = response.content
-            self._payload = json.loads(response.content)
-            self._raise_for_status(self._payload)
-        except (ValueError, TypeError, AttributeError) as err:
+            status_code = response.status_code
+        except AttributeError as err:
             raise EtcdInvalidResponse(err)
+
+        if status_code in [204, 205]:
+            self._response_content = response.content
+            self._payload = {}
+        else:
+            try:
+                if response.content in ['', None]:
+                    raise EtcdEmptyResponse('Empty response from etcd')
+                self._response_content = response.content
+                self._payload = json.loads(response.content)
+                response.raise_for_status()
+                self._raise_for_status(self._payload)
+            except (ValueError, TypeError, AttributeError) as err:
+                raise EtcdInvalidResponse(err)
 
     def __repr__(self):
         return self._response_content
@@ -310,10 +324,7 @@ class EtcdResult(object):
     @property
     def x_etcd_index(self):
         """current etcd index that represents key modification version."""
-        try:
-            return self._x_etcd_index
-        except AttributeError:
-            return None
+        return self._x_etcd_index
 
     @property
     def action(self):
@@ -352,7 +363,7 @@ class EtcdResult(object):
 
     @property
     def id(self):  # pylint: disable=invalid-name
-        """id"""
+        """etcd identifier of the etcd node."""
         return self._get_property('id')
 
     @property
@@ -362,7 +373,7 @@ class EtcdResult(object):
 
     @property
     def name(self):
-        """name"""
+        """etcd name of the node."""
         return self._get_property('name')
 
     @property
