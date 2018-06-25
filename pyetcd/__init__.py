@@ -290,9 +290,10 @@ class EtcdResult(object):
                 if response.content in ['', None]:
                     raise EtcdEmptyResponse('Empty response from etcd')
                 self._response_content = response.content
+                print("response.content(%s): %r" % (type(response.content), response.content))
                 self._payload = json.loads(response.content)
-                response.raise_for_status()
                 self._raise_for_status(self._payload)
+                response.raise_for_status()
             except (ValueError, TypeError, AttributeError) as err:
                 raise EtcdInvalidResponse(err)
 
