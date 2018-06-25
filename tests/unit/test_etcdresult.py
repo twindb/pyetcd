@@ -2,8 +2,10 @@
 import mock
 # noinspection PyPackageRequirements
 import pytest
-from pyetcd import EtcdResult, EtcdException, EtcdInvalidResponse, \
-    EtcdEmptyResponse
+from requests import HTTPError
+
+from pyetcd import EtcdResult, EtcdInvalidResponse, \
+    EtcdEmptyResponse, EtcdKeyNotFound
 
 
 def test_etcd_result_response(payload_self):
@@ -154,14 +156,13 @@ def test_node(payload, expected):
     "errorCode": 100,
     "index": 6,
     "message": "Key not found"
-}""",
-     None)
+}""")
 ])
-def test_node_exception(payload):
+def test_node_not_found_exception(payload):
     response = mock.Mock()
     response.content = payload
-    with pytest.raises(EtcdException):
-        # noinspection PyTypeChecker
+    response.raise_for_status.side_effect = HTTPError('404 error', response=response)
+    with pytest.raises(EtcdKeyNotFound):
         EtcdResult(response)
 
 

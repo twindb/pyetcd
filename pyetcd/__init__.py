@@ -3,7 +3,7 @@ import json
 
 __author__ = 'TwinDB Development Team'
 __email__ = 'dev@twindb.com'
-__version__ = '1.11.0'
+__version__ = '1.11.1'
 
 
 # Exceptions
@@ -291,8 +291,8 @@ class EtcdResult(object):
                     raise EtcdEmptyResponse('Empty response from etcd')
                 self._response_content = response.content
                 self._payload = json.loads(response.content)
-                response.raise_for_status()
                 self._raise_for_status(self._payload)
+                response.raise_for_status()
             except (ValueError, TypeError, AttributeError) as err:
                 raise EtcdInvalidResponse(err)
 
